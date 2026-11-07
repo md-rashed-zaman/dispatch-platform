@@ -1,0 +1,29 @@
+# Secrets: real values live only in .env (see .env.example)
+.env
+.env.*
+!.env.example
+
+# Build output
+target/
+build/
+out/
+*.class
+*.jar
+!**/.mvn/wrapper/maven-wrapper.jar
+
+# IDE and OS
+.idea/
+*.iml
+.vscode/
+.DS_Store
+
+# Logs and local data
+*.log
+infra/compose/data/
+
+# Node (Phase 6 notification service)
+node_modules/
+dist/
+
+# AI eval response cache can be large; results are committed, raw cache is not
+evals/.cache/
