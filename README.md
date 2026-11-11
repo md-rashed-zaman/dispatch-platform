@@ -47,6 +47,8 @@ docker compose -f infra/compose/docker-compose.yml build postgres
 cd app && ./mvnw verify
 ```
 
+`verify` also checks formatting (Spotless, Palantir style) and writes a coverage report to `app/target/site/jacoco/index.html`. Fix formatting with `./mvnw spotless:apply`. CI runs the same build on every push and pull request.
+
 ## Decisions
 
 See [docs/adr](docs/adr).

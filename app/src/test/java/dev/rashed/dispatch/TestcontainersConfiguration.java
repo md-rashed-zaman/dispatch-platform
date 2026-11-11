@@ -16,5 +16,4 @@ class TestcontainersConfiguration {
         return new PostgreSQLContainer(
                 DockerImageName.parse("dispatch-postgres:local").asCompatibleSubstituteFor("postgres"));
     }
-
 }

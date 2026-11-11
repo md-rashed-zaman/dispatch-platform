@@ -20,5 +20,4 @@ class DispatchApplicationTests {
         var extensions = jdbc.queryForList("select extname from pg_extension", String.class);
         assertThat(extensions).contains("postgis", "vector");
     }
-
 }

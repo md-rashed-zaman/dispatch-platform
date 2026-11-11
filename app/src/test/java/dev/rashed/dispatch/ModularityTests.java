@@ -10,5 +10,4 @@ class ModularityTests {
     void modulesRespectBoundaries() {
         ApplicationModules.of(DispatchApplication.class).verify();
     }
-
 }
