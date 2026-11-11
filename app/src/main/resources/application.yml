@@ -1,0 +1,24 @@
+spring:
+  application:
+    name: dispatch
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/dispatch}
+    username: ${POSTGRES_USER:dispatch}
+    password: ${POSTGRES_PASSWORD:dispatch}
+  jpa:
+    open-in-view: false        # don't hold a DB connection while rendering responses (see T06)
+    hibernate:
+      ddl-auto: validate       # Flyway owns the schema; Hibernate only checks it matches
+    properties:
+      hibernate:
+        default_batch_fetch_size: 50
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,modulith
+  endpoint:
+    health:
+      probes:
+        enabled: true          # /actuator/health/liveness and /readiness for Kubernetes later

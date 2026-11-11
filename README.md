@@ -29,7 +29,23 @@ docs/perf/        Performance measurements
 
 ## Getting started
 
-Not runnable yet. Setup instructions arrive with step 0.3 (skeleton app and local infrastructure).
+Requirements: Docker, JDK 21+.
+
+```bash
+cp .env.example .env
+docker compose -f infra/compose/docker-compose.yml up -d --wait postgres
+cd app && ./mvnw spring-boot:run
+```
+
+- Health: http://localhost:8080/actuator/health
+- API docs: http://localhost:8080/swagger-ui/index.html
+
+Tests use Testcontainers and the same Postgres image, so build it once first:
+
+```bash
+docker compose -f infra/compose/docker-compose.yml build postgres
+cd app && ./mvnw verify
+```
 
 ## Decisions
 

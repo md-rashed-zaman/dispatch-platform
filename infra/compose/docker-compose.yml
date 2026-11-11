@@ -1,0 +1,25 @@
+# Local stack. Services are added as steps need them (Keycloak at 1.2, storage at 1.7, Kafka and Redis in Phase 2).
+# Memory limits keep the stack usable on an 8 GB laptop.
+name: dispatch
+
+services:
+  postgres:
+    build: ./postgres
+    image: dispatch-postgres:local
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-dispatch}
+      POSTGRES_USER: ${POSTGRES_USER:-dispatch}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-dispatch}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    mem_limit: 512m
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  postgres-data:
