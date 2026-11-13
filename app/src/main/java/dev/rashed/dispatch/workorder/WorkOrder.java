@@ -27,6 +27,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.annotations.TenantId;
 import org.hibernate.annotations.UuidGenerator;
 import org.hibernate.type.SqlTypes;
 
@@ -44,6 +45,11 @@ public class WorkOrder {
     @UuidGenerator(style = UuidGenerator.Style.VERSION_7)
     private UUID id;
 
+    /**
+     * The owning company. Hibernate filters every query by the current tenant and refuses to save a work
+     * order for any other tenant (see TenantContext).
+     */
+    @TenantId
     private UUID tenantId;
 
     private String title;

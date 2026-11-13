@@ -83,3 +83,6 @@ Aggregates point at each other with ID columns, never with Java object reference
 | A technician gets at most one offer per work order | `offer_once_per_technician` |
 | Money is positive and in minor units | `budget_minor BIGINT CHECK (> 0)` |
 | Time window ends after it starts | `work_order_window_valid` |
+| A tenant sees and writes only its own work orders, checklists and offers | row-level security policies `tenant_isolation` (V4, [ADR 0003](../adr/0003-shared-schema-and-row-level-security-for-tenancy.md)) |
+
+`company` and `technician` are not tenant-owned: companies are the tenant list, and technicians work for many companies.

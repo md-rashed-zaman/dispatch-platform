@@ -30,6 +30,8 @@ class SchemaConstraintsTests {
     @BeforeEach
     void setUp() {
         jdbc.update("insert into company (id, name, slug) values (?, 'Acme', ?)", companyId, "acme-" + companyId);
+        // Row-level security: this transaction works for Acme (the app does this when a transaction starts).
+        jdbc.queryForObject("select set_config('app.tenant_id', ?, true)", String.class, companyId.toString());
         insertWorkOrder(workOrderId, "ROUTED", null);
     }
 
