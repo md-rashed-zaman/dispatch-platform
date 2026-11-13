@@ -37,6 +37,12 @@ docker compose -f infra/compose/docker-compose.yml up -d --wait postgres
 cd app && ./mvnw spring-boot:run
 ```
 
+Optional sample data (3 companies, 300 technicians, 30 work orders around Dhaka and Chattogram; wipes existing data):
+
+```bash
+docker compose -f infra/compose/docker-compose.yml exec -T postgres psql -U dispatch -d dispatch -v ON_ERROR_STOP=1 < infra/seed/dev-seed.sql
+```
+
 - Health: http://localhost:8080/actuator/health
 - API docs: http://localhost:8080/swagger-ui/index.html
 
