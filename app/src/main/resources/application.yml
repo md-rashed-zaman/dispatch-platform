@@ -3,8 +3,16 @@ spring:
     name: dispatch
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/dispatch}
-    username: ${POSTGRES_USER:dispatch}
+    # Not the owner or a superuser, so row-level security applies to every query the app runs (ADR 0003).
+    # Migration V4 creates this role; the app refuses to start as a role that bypasses the policies.
+    username: dispatch_app
+    password: ${DB_APP_PASSWORD:dispatch_app}
+  flyway:
+    # Migrations run as the schema owner. Only Flyway uses this account, never the app's own queries.
+    user: ${POSTGRES_USER:dispatch}
     password: ${POSTGRES_PASSWORD:dispatch}
+    placeholders:
+      app-password: ${spring.datasource.password}
   jpa:
     open-in-view: false        # don't hold a DB connection while rendering responses (see T06)
     hibernate:
