@@ -38,6 +38,7 @@ dispatch:
 
 springdoc:
   swagger-ui:
+    operations-sorter: alpha   # by path, so /work-orders/{id}/... actions sit together under the resource
     oauth:
       client-id: dispatch-web
       use-pkce-with-authorization-code-grant: true

@@ -96,6 +96,20 @@ class WorkOrderLoadingTests {
                 .containsExactly("Item 0", "Item 1", "Item 2");
     }
 
+    @Test
+    void creatingAWorkOrderWritesEachRowOnce() {
+        long statements = asTenant(() -> {
+            var workOrder = WorkOrders.draft(tenantId, "New one");
+            workOrder.addChecklistItem("Item 0");
+            workOrder.addChecklistItem("Item 1");
+            workOrders.saveAndFlush(workOrder);
+            return statistics().getPrepareStatementCount();
+        });
+        // 1 work order + 2 items + 1 version bump (adding checklist items counts as changing the work order).
+        // Was 5: @CreationTimestamp made Hibernate rewrite the whole row right after inserting it.
+        assertThat(statements).isEqualTo(4);
+    }
+
     /** Runs {@code work} in a new transaction as the test tenant, counting only the statements it runs. */
     private <T> T asTenant(Supplier<T> work) {
         return TenantContext.callAs(

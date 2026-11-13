@@ -1,6 +1,6 @@
 package dev.rashed.dispatch.workorder;
 
-/** Lifecycle states. Transitions are enforced by {@link WorkOrder} methods (step 1.4). */
+/** Lifecycle states. Which moves are allowed between them is {@link Transition}'s table. */
 public enum WorkOrderStatus {
     DRAFT,
     PUBLISHED,
