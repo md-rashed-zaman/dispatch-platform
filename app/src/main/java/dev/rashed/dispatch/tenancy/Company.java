@@ -1,11 +1,12 @@
 package dev.rashed.dispatch.tenancy;
 
+import dev.rashed.dispatch.shared.Timestamps;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.time.Instant;
 import java.util.UUID;
-import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UuidGenerator;
 
 /** A tenant: a client company that posts work orders. Aggregate root. */
@@ -22,7 +23,7 @@ public class Company {
     /** URL-safe unique name, e.g. {@code city-bank}. */
     private String slug;
 
-    @CreationTimestamp
+    @Column(updatable = false)
     private Instant createdAt;
 
     protected Company() {} // for JPA
@@ -35,6 +36,7 @@ public class Company {
             throw new IllegalArgumentException("Invalid slug: " + slug);
         }
         this.name = name.strip();
+        this.createdAt = Timestamps.now();
         this.slug = slug;
     }
 

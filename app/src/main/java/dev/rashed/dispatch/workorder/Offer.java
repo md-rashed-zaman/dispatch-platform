@@ -1,5 +1,7 @@
 package dev.rashed.dispatch.workorder;
 
+import dev.rashed.dispatch.shared.Timestamps;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -8,7 +10,6 @@ import jakarta.persistence.Table;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
-import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UuidGenerator;
 
 /**
@@ -34,7 +35,7 @@ public class Offer {
 
     private Instant respondedAt;
 
-    @CreationTimestamp
+    @Column(updatable = false)
     private Instant createdAt;
 
     protected Offer() {} // for JPA
@@ -44,6 +45,7 @@ public class Offer {
         this.technicianId = Objects.requireNonNull(technicianId, "technicianId");
         this.expiresAt = Objects.requireNonNull(expiresAt, "expiresAt");
         this.status = OfferStatus.OFFERED;
+        this.createdAt = Timestamps.now();
     }
 
     static Offer create(UUID workOrderId, UUID technicianId, Instant expiresAt) {

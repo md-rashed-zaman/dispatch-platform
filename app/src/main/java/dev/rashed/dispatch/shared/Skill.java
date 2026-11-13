@@ -7,8 +7,10 @@ import java.util.TreeSet;
 /** A skill code like {@code pos-terminal} or {@code networking}: lowercase words joined by dashes. */
 public record Skill(String code) {
 
+    public static final String PATTERN = "[a-z0-9]+(-[a-z0-9]+)*";
+
     public Skill {
-        if (code == null || !code.matches("[a-z0-9]+(-[a-z0-9]+)*")) {
+        if (code == null || !code.matches(PATTERN)) {
             throw new IllegalArgumentException("Invalid skill code: " + code);
         }
     }

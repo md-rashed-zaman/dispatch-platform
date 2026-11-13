@@ -1,9 +1,11 @@
 package dev.rashed.dispatch.workorder;
 
+import dev.rashed.dispatch.shared.BusinessRuleException;
 import dev.rashed.dispatch.shared.GeoPoint;
 import dev.rashed.dispatch.shared.Money;
 import dev.rashed.dispatch.shared.Skill;
 import dev.rashed.dispatch.shared.TimeWindow;
+import dev.rashed.dispatch.shared.Timestamps;
 import jakarta.persistence.AttributeOverride;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -16,6 +18,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import jakarta.persistence.Version;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -25,15 +28,19 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.TenantId;
 import org.hibernate.annotations.UuidGenerator;
 import org.hibernate.type.SqlTypes;
+import org.springframework.data.domain.AfterDomainEventPublication;
+import org.springframework.data.domain.DomainEvents;
 
 /**
  * A request for on-site work. Aggregate root: owns its checklist items, and refers to its tenant and
  * technician by id only (they are other aggregates, loaded and locked separately).
+ *
+ * <p>The status changes only through the transition methods ({@link #publish()}, {@link #approve()}, ...),
+ * each checked against {@link WorkOrderStatus}'s table. There is no status setter.
  */
 @Entity
 @Table(name = "work_order")
@@ -82,6 +89,9 @@ public class WorkOrder {
     /** Set on assignment. An id, not a Technician object: technicians are a separate aggregate. */
     private UUID technicianId;
 
+    /** Why the submitted work was sent back. Cleared when the technician submits again. */
+    private String rejectionReason;
+
     // Unidirectional: items never navigate back to their work order, so there's no back-reference to keep in sync.
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "work_order_id", nullable = false, updatable = false)
@@ -91,8 +101,12 @@ public class WorkOrder {
     @Version
     private Long version;
 
-    @CreationTimestamp
+    @Column(updatable = false)
     private Instant createdAt;
+
+    // Published by Spring Data when the repository saves this work order, then cleared.
+    @Transient
+    private final List<WorkOrderStatusChanged> events = new ArrayList<>();
 
     protected WorkOrder() {} // for JPA
 
@@ -106,17 +120,16 @@ public class WorkOrder {
             TimeWindow timeWindow,
             Money budget) {
         this.tenantId = Objects.requireNonNull(tenantId, "tenantId");
-        this.title = requireText(title, "Title", 200);
-        this.description = requireText(description, "Description", 5000);
-        this.siteAddress = requireText(siteAddress, "Site address", 500);
-        this.site = Objects.requireNonNull(site, "site");
-        this.requiredSkills = Skill.codes(requiredSkills);
-        this.timeWindow = Objects.requireNonNull(timeWindow, "timeWindow");
-        this.budget = Objects.requireNonNull(budget, "budget");
-        if (!budget.isPositive()) {
-            throw new IllegalArgumentException("Budget must be greater than zero");
-        }
         this.status = WorkOrderStatus.DRAFT;
+        this.createdAt = Timestamps.now();
+        revise(new WorkOrderChanges(
+                Objects.requireNonNull(title, "title"),
+                Objects.requireNonNull(description, "description"),
+                Objects.requireNonNull(siteAddress, "siteAddress"),
+                Objects.requireNonNull(site, "site"),
+                Set.copyOf(Objects.requireNonNull(requiredSkills, "requiredSkills")),
+                Objects.requireNonNull(timeWindow, "timeWindow"),
+                Objects.requireNonNull(budget, "budget")));
     }
 
     public static WorkOrder draft(
@@ -131,18 +144,137 @@ public class WorkOrder {
         return new WorkOrder(tenantId, title, description, siteAddress, site, requiredSkills, timeWindow, budget);
     }
 
+    /**
+     * Edits the fields given in {@code changes}, leaving the others. Only drafts: once published, technicians
+     * may already be deciding based on what they saw.
+     */
+    public void revise(WorkOrderChanges changes) {
+        requireDraft("edited");
+        if (changes.title() != null) {
+            this.title = requireText(changes.title(), "Title", 200);
+        }
+        if (changes.description() != null) {
+            this.description = requireText(changes.description(), "Description", 5000);
+        }
+        if (changes.siteAddress() != null) {
+            this.siteAddress = requireText(changes.siteAddress(), "Site address", 500);
+        }
+        if (changes.site() != null) {
+            this.site = changes.site();
+        }
+        if (changes.requiredSkills() != null) {
+            this.requiredSkills = Skill.codes(changes.requiredSkills());
+        }
+        if (changes.timeWindow() != null) {
+            this.timeWindow = changes.timeWindow();
+        }
+        if (changes.budget() != null) {
+            if (!changes.budget().isPositive()) {
+                throw new IllegalArgumentException("Budget must be greater than zero");
+            }
+            this.budget = changes.budget();
+        }
+    }
+
     /** The checklist is what the technician is paid against, so it can only change while drafting. */
     public ChecklistItem addChecklistItem(String description) {
-        if (status != WorkOrderStatus.DRAFT) {
-            throw new IllegalStateException("Checklist can only change while the work order is a draft");
-        }
+        requireDraft("given checklist items");
         if (checklist.size() >= MAX_CHECKLIST_ITEMS) {
-            throw new IllegalStateException(
+            throw new BusinessRuleException(
                     "A work order can have at most " + MAX_CHECKLIST_ITEMS + " checklist items");
         }
         var item = new ChecklistItem(checklist.size(), description);
         checklist.add(item);
         return item;
+    }
+
+    // ---- Lifecycle: one method per command in the Transition table, which each of them checks. ----
+
+    /** Ready for technicians: matching starts looking for candidates. */
+    public void publish() {
+        requireAllowed(Transition.PUBLISH);
+        if (checklist.isEmpty()) {
+            throw new BusinessRuleException("Add at least one checklist item before publishing");
+        }
+        apply(Transition.PUBLISH);
+    }
+
+    /** Offers were sent to candidate technicians (matching, step 1.6). */
+    public void route() {
+        apply(Transition.ROUTE);
+    }
+
+    /** Nobody accepted in time: back to PUBLISHED so matching can try other technicians. */
+    public void offersExpired() {
+        apply(Transition.OFFERS_EXPIRED);
+    }
+
+    /** A technician accepted an offer (step 1.6 makes this safe when several accept at once). */
+    public void assign(UUID technicianId) {
+        Objects.requireNonNull(technicianId, "technicianId");
+        requireAllowed(Transition.ASSIGN);
+        this.technicianId = technicianId;
+        apply(Transition.ASSIGN);
+    }
+
+    public void start() {
+        apply(Transition.START);
+    }
+
+    public void submit() {
+        requireAllowed(Transition.SUBMIT);
+        this.rejectionReason = null;
+        apply(Transition.SUBMIT);
+    }
+
+    /** The client accepts the work; payment can be released. */
+    public void approve() {
+        apply(Transition.APPROVE);
+    }
+
+    /** Sends the work back to the technician, who sees {@code reason}, fixes it and submits again. */
+    public void reject(String reason) {
+        requireAllowed(Transition.REJECT);
+        this.rejectionReason = requireText(reason, "Rejection reason", 1000);
+        apply(Transition.REJECT);
+    }
+
+    /** The technician's payout was released (payment, Phase 4). */
+    public void markPaid() {
+        apply(Transition.MARK_PAID);
+    }
+
+    public void cancel() {
+        apply(Transition.CANCEL);
+    }
+
+    private void requireAllowed(Transition transition) {
+        if (!transition.from.contains(status)) {
+            throw new InvalidTransitionException(transition.verb, status);
+        }
+    }
+
+    private void requireDraft(String what) {
+        if (status != WorkOrderStatus.DRAFT) {
+            throw new BusinessRuleException("Only a draft can be " + what + "; this work order is " + status);
+        }
+    }
+
+    /** Checks the table (again, for methods that checked it before their guards) and moves. */
+    private void apply(Transition transition) {
+        requireAllowed(transition);
+        events.add(new WorkOrderStatusChanged(id, tenantId, status, transition.to, technicianId, Instant.now()));
+        this.status = transition.to;
+    }
+
+    @DomainEvents
+    List<WorkOrderStatusChanged> pendingEvents() {
+        return List.copyOf(events);
+    }
+
+    @AfterDomainEventPublication
+    void clearEvents() {
+        events.clear();
     }
 
     public UUID id() {
@@ -187,6 +319,15 @@ public class WorkOrder {
 
     public UUID technicianId() {
         return technicianId;
+    }
+
+    public String rejectionReason() {
+        return rejectionReason;
+    }
+
+    /** Increases with every saved change; the API sends it as the ETag (optimistic locking). */
+    public long version() {
+        return version == null ? 0 : version;
     }
 
     /** Read-only view: callers can't add or remove items behind the aggregate's back. */

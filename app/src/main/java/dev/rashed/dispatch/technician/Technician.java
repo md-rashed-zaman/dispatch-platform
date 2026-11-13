@@ -2,6 +2,7 @@ package dev.rashed.dispatch.technician;
 
 import dev.rashed.dispatch.shared.GeoPoint;
 import dev.rashed.dispatch.shared.Skill;
+import dev.rashed.dispatch.shared.Timestamps;
 import jakarta.persistence.AttributeOverride;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embedded;
@@ -17,7 +18,6 @@ import java.util.Collection;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UuidGenerator;
 import org.hibernate.type.SqlTypes;
@@ -57,7 +57,7 @@ public class Technician {
     @Version
     private Long version;
 
-    @CreationTimestamp
+    @Column(updatable = false)
     private Instant createdAt;
 
     protected Technician() {} // for JPA
@@ -81,6 +81,7 @@ public class Technician {
         this.home = home;
         this.serviceRadiusKm = serviceRadiusKm;
         this.status = TechnicianStatus.PENDING_VERIFICATION;
+        this.createdAt = Timestamps.now();
     }
 
     public static Technician register(
