@@ -4,6 +4,8 @@ on:
   push:
     branches: [main]
   pull_request:
+  # Manual run from the Actions tab, e.g. after a GitHub outage drops a run
+  workflow_dispatch:
 
 # A newer push to the same branch cancels the older run
 concurrency:
