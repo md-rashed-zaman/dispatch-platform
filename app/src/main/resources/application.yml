@@ -12,6 +12,27 @@ spring:
     properties:
       hibernate:
         default_batch_fetch_size: 50
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # Spring downloads Keycloak's public keys (JWKS) once and caches them, then checks each token's
+          # signature, expiry and audience locally: no call to Keycloak per request. The issuer check is a
+          # bean in SecurityConfig, so tests (which swap in a test public key) run the exact same checks.
+          jwk-set-uri: ${dispatch.oauth.issuer-uri}/protocol/openid-connect/certs
+          audiences: dispatch-api
+          authorities-claim-name: roles   # flat claim added by the realm's dispatch-api scope
+          authority-prefix: ROLE_         # DISPATCHER -> ROLE_DISPATCHER, so hasRole('DISPATCHER') works
+
+dispatch:
+  oauth:
+    issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8180/realms/dispatch}
+
+springdoc:
+  swagger-ui:
+    oauth:
+      client-id: dispatch-web
+      use-pkce-with-authorization-code-grant: true
 
 management:
   endpoints:

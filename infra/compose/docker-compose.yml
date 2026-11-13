@@ -21,5 +21,34 @@ services:
       timeout: 3s
       retries: 10
 
+  # Identity provider. start-dev keeps data in the container (H2), so recreating it resets the realm
+  # to keycloak/dispatch-realm.json. Admin console: http://localhost:8180 (admin / admin).
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.8.2
+    command: ["start-dev", "--import-realm"]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN:-admin}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
+      KC_HTTP_PORT: 8180
+      # Pins the token issuer to this URL, whoever calls Keycloak (browser, app, container).
+      KC_HOSTNAME: http://localhost:8180
+      KC_HEALTH_ENABLED: "true"
+    ports:
+      - "8180:8180"
+    volumes:
+      - ./keycloak:/opt/keycloak/data/import:ro
+    mem_limit: 768m
+    healthcheck:
+      # The image has no curl; ask the management port (9000) for readiness with bash's /dev/tcp.
+      test:
+        - CMD-SHELL
+        - >-
+          exec 3<>/dev/tcp/localhost/9000 &&
+          printf 'GET /health/ready HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n' >&3 &&
+          grep -q '"UP"' <&3
+      interval: 10s
+      timeout: 5s
+      retries: 30
+
 volumes:
   postgres-data:

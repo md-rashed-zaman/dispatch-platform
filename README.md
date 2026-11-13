@@ -33,7 +33,7 @@ Requirements: Docker, JDK 21+.
 
 ```bash
 cp .env.example .env
-docker compose -f infra/compose/docker-compose.yml up -d --wait postgres
+docker compose -f infra/compose/docker-compose.yml up -d --wait postgres keycloak
 cd app && ./mvnw spring-boot:run
 ```
 
@@ -44,7 +44,26 @@ docker compose -f infra/compose/docker-compose.yml exec -T postgres psql -U disp
 ```
 
 - Health: http://localhost:8080/actuator/health
-- API docs: http://localhost:8080/swagger-ui/index.html
+- API docs: http://localhost:8080/swagger-ui/index.html (click **Authorize**, log in as a test user below)
+- Keycloak admin console: http://localhost:8180 (admin / admin)
+
+Test users (password `password` for all; local realm only, defined in `infra/compose/keycloak/dispatch-realm.json`):
+
+| Username | Role | Tenant |
+|---|---|---|
+| `dispatcher.meghna` | DISPATCHER | Meghna Bank |
+| `admin.meghna` | CLIENT_ADMIN | Meghna Bank |
+| `dispatcher.shwapno` | DISPATCHER | Shwapno Retail |
+| `tech.rahim` | TECHNICIAN | none (marketplace-wide) |
+| `ops.admin` | PLATFORM_ADMIN | none |
+
+Get a token from the command line (the `dispatch-dev-cli` client allows password login for local testing only):
+
+```bash
+TOKEN=$(curl -s http://localhost:8180/realms/dispatch/protocol/openid-connect/token \
+  -d grant_type=password -d client_id=dispatch-dev-cli -d username=dispatcher.meghna -d password=password | jq -r .access_token)
+curl -s localhost:8080/api/me -H "Authorization: Bearer $TOKEN"
+```
 
 Tests use Testcontainers and the same Postgres image, so build it once first:
 
