@@ -15,10 +15,11 @@ INSERT INTO city VALUES ('Dhaka', 23.8103, 90.4125), ('Chattogram', 22.3569, 91.
 CREATE TEMP TABLE skill (code TEXT) ON COMMIT DROP;
 INSERT INTO skill VALUES ('networking'), ('pos-terminal'), ('printer'), ('cctv'), ('electrical'), ('ac-repair');
 
+-- Fixed ids: Keycloak test users carry these as their tenant_id claim (infra/compose/keycloak).
 INSERT INTO company (id, name, slug) VALUES
-  (gen_random_uuid(), 'Meghna Bank PLC', 'meghna-bank'),
-  (gen_random_uuid(), 'Shwapno Retail', 'shwapno-retail'),
-  (gen_random_uuid(), 'Padma Garments Ltd', 'padma-garments');
+  ('01930000-0000-7000-8000-000000000001', 'Meghna Bank PLC', 'meghna-bank'),
+  ('01930000-0000-7000-8000-000000000002', 'Shwapno Retail', 'shwapno-retail'),
+  ('01930000-0000-7000-8000-000000000003', 'Padma Garments Ltd', 'padma-garments');
 
 INSERT INTO technician (id, full_name, phone, skills, home_latitude, home_longitude, service_radius_km, rating, status)
 SELECT gen_random_uuid(),
