@@ -35,6 +35,9 @@ spring:
         max.block.ms: 10000           # with Kafka down, fail a send after 10 s instead of 60
         request.timeout.ms: 10000
         delivery.timeout.ms: 30000    # must be >= linger.ms + request.timeout.ms, or the producer won't start
+    consumer:
+      auto-offset-reset: earliest     # a new consumer group starts from the oldest event Kafka still has
+      enable-auto-commit: false       # offsets are committed by the listener container, after processing
   jpa:
     open-in-view: false        # don't hold a DB connection while rendering responses (see T06)
     hibernate:
@@ -73,6 +76,11 @@ dispatch:
     send-timeout: PT35S               # longer than delivery.timeout.ms, so Kafka's own verdict comes first
     partitions: 6                     # locally; production sizes partitions for its consumers
     replicas: 1
+  notification:
+    consumer-enabled: ${NOTIFICATION_CONSUMER_ENABLED:true}
+    retry:
+      initial-interval: PT1S          # then 2 s, 4 s, 8 s; then the dead-letter topic
+      max-retries: 4
 
 springdoc:
   default-produces-media-type: application/json   # not */*: every endpoint returns JSON

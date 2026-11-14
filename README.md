@@ -16,6 +16,7 @@ Built as a portfolio project to show production backend engineering: correctness
 | **Lifecycle that can't be broken** | A ten-row transition table; every command from every status is tested (90 pairs). Edits need `If-Match`, so nobody overwrites changes they haven't seen (412). | [ADR 0004](docs/adr/0004-hand-written-state-machine.md), [lifecycle](docs/diagrams/work-order-lifecycle.md) |
 | **Photos without touching the API** | Presigned URLs signed for one key, content type and size, valid 5 minutes. Confirm checks what arrived, down to the first bytes. Same code on SeaweedFS locally and Amazon S3. | [upload flow](docs/diagrams/attachment-upload.md), `AttachmentApiTests` |
 | **Events that can't get lost** | Every lifecycle change goes to Kafka through a transactional outbox: the event row commits with the change, and a relay sends it. Kafka down, or the app killed with `kill -9`: requests keep succeeding and every event arrives later, in order per work order. | [ADR 0006](docs/adr/0006-polling-outbox-before-cdc.md), `OutboxRelayTests` |
+| **Consumers that survive real delivery** | The notification consumer deduplicates by event id in the same transaction as its work, retries temporary failures with exponential backoff, and moves poison messages to a dead-letter topic without stopping. Replaying the whole topic notified nobody twice. | `CompanyNotificationsTests`, [failure modes](docs/failure-modes.md) |
 | **Fails politely** | Database or storage down: 503 with `Retry-After` within 3 s, readiness `DOWN`, automatic recovery. Every error is RFC 9457 Problem Details. | [docs/failure-modes.md](docs/failure-modes.md) |
 
 ## Architecture
@@ -58,7 +59,7 @@ flowchart LR
   api -- "outbox relay:<br/>work order events" --> kafka
 ```
 
-Modules talk through public APIs and events only; Spring Modulith fails the build on a boundary violation. Workorder never calls matching: matching reacts to `WorkOrderPublished` after the commit, and notification to `WorkOrderAssigned`. Other systems get every status change from Kafka, keyed by work order id. The [context map](docs/diagrams/context-map.md) shows the planned modules (matching, payment, ledger, notification, AI) and the events between them.
+Modules talk through public APIs and events only; Spring Modulith fails the build on a boundary violation. Workorder never calls matching: matching reacts to `WorkOrderPublished` after the commit, and notification to `WorkOrderAssigned`. Other systems get every status change from Kafka, keyed by work order id; notification itself reads them from there to tell the company, as a separate service would. The [context map](docs/diagrams/context-map.md) shows the planned modules (matching, payment, ledger, notification, AI) and the events between them.
 
 **From publish to accept:**
 

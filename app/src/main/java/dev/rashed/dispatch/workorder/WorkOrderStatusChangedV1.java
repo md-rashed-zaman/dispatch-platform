@@ -14,4 +14,8 @@ public record WorkOrderStatusChangedV1(
         WorkOrderStatus from,
         WorkOrderStatus to,
         @Nullable UUID technicianId,
-        Instant occurredAt) {}
+        Instant occurredAt) {
+
+    public static final String TYPE = "work-order.status-changed";
+    public static final int VERSION = 1;
+}

@@ -9,8 +9,6 @@ import org.springframework.stereotype.Component;
 @Component
 class WorkOrderEventsOutbox {
 
-    static final String STATUS_CHANGED = "work-order.status-changed";
-
     private final Outbox outbox;
 
     WorkOrderEventsOutbox(Outbox outbox) {
@@ -24,8 +22,8 @@ class WorkOrderEventsOutbox {
         outbox.append(
                 Topics.WORK_ORDER_EVENTS,
                 event.workOrderId().toString(),
-                STATUS_CHANGED,
-                1,
+                WorkOrderStatusChangedV1.TYPE,
+                WorkOrderStatusChangedV1.VERSION,
                 event.tenantId(),
                 event.occurredAt(),
                 new WorkOrderStatusChangedV1(
