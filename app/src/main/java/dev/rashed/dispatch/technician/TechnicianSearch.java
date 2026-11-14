@@ -70,6 +70,26 @@ public class TechnicianSearch {
                 .map(Row::technician);
     }
 
+    /**
+     * The nearest matching technicians, for system callers like matching (no signed-in user, so no role check).
+     * Same query as {@link #nearby}, first page only.
+     */
+    @Transactional(readOnly = true)
+    public List<NearbyTechnician> nearest(GeoPoint site, int radiusKm, Collection<String> requiredSkills, int limit) {
+        return jdbc
+                .sql(SEARCH + ORDER_AND_LIMIT)
+                .param("latitude", site.latitude())
+                .param("longitude", site.longitude())
+                .param("radiusMeters", radiusKm * 1000)
+                .param("skills", Skill.codes(requiredSkills).toArray(String[]::new))
+                .param("limit", limit)
+                .query(TechnicianSearch::row)
+                .list()
+                .stream()
+                .map(Row::technician)
+                .toList();
+    }
+
     private static double distanceOf(Cursor cursor) {
         try {
             var distance = Double.parseDouble(cursor.sortValue());

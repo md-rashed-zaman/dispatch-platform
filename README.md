@@ -4,7 +4,7 @@ A multi-tenant marketplace for on-site technical work. A bank needs a POS termin
 
 Built as a portfolio project to show production backend engineering: correctness under concurrency, tenant isolation, measured performance, and failure handling, each proven by tests and written up.
 
-> **Status:** Phase 1 complete (core marketplace). Next: events, reliability and observability (Phase 2).
+> **Status:** Phase 1 complete (core marketplace). Phase 2 in progress: events, reliability and observability.
 
 ## What it does today
 
@@ -55,7 +55,7 @@ flowchart LR
   api -- "HEAD, ranged GET, DELETE" --> s3
 ```
 
-Modules talk through public APIs only; Spring Modulith fails the build on a boundary violation. The [context map](docs/diagrams/context-map.md) shows the planned modules (matching, payment, ledger, notification, AI) and the events between them.
+Modules talk through public APIs and events only; Spring Modulith fails the build on a boundary violation. Workorder never calls matching: matching reacts to `WorkOrderPublished` after the commit, and notification to `WorkOrderAssigned`. The [context map](docs/diagrams/context-map.md) shows the planned modules (matching, payment, ledger, notification, AI) and the events between them.
 
 **From publish to accept:**
 
@@ -66,9 +66,11 @@ sequenceDiagram
   participant DB as PostgreSQL
   participant T as Technicians
   D->>API: POST /work-orders/7/publish
-  API->>DB: DRAFT -> PUBLISHED, then search: verified, all skills, within 20 km, nearest 10
-  API->>DB: offers for the 10, work order ROUTED (one transaction)
-  API-->>D: 200 ROUTED
+  API->>DB: DRAFT -> PUBLISHED, record WorkOrderPublished (same transaction)
+  API-->>D: 200 PUBLISHED
+  Note over API: after commit, on another thread: matching reacts to the event
+  API->>DB: search: verified, all skills, within 20 km, nearest 10
+  API->>DB: offers for the 10, work order ROUTED
   T->>API: GET /me/offers (row-level security: only their own)
   T->>API: POST /offers/{id}/accept (several at once)
   API->>DB: UPDATE work_order SET status=ASSIGNED, technician=me WHERE id=7 AND status=ROUTED

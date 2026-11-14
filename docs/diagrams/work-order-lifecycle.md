@@ -24,8 +24,8 @@ stateDiagram-v2
 
 | Command | From | To | Who triggers it | API |
 |---|---|---|---|---|
-| publish | DRAFT | PUBLISHED | Dispatcher, client admin | `POST /api/work-orders/{id}/publish` (then routes, see next row) |
-| route | PUBLISHED | ROUTED | Publishing, when technicians in range have the skills: offers go to the nearest 10 | (part of publish) |
+| publish | DRAFT | PUBLISHED | Dispatcher, client admin | `POST /api/work-orders/{id}/publish` |
+| route | PUBLISHED | ROUTED | Matching, reacting to `WorkOrderPublished` after the publish commits: offers go to the nearest 10 technicians with the skills | (event, no endpoint) |
 | offers expired | ROUTED | PUBLISHED | Scheduled job (step 2.5) | - |
 | assign | ROUTED | ASSIGNED | Technician accepts an offer; the first one wins ([ADR 0005](../adr/0005-conditional-update-for-job-acceptance.md)) | `POST /api/offers/{id}/accept` |
 | start | ASSIGNED | IN_PROGRESS | The assigned technician | `POST /api/work-orders/{id}/start` |

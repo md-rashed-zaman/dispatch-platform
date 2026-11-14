@@ -149,7 +149,31 @@ class WorkOrderTransitionsTest {
         workOrder.cancel();
 
         assertThat(workOrder.pendingEvents())
+                .filteredOn(WorkOrderStatusChanged.class::isInstance)
+                .map(WorkOrderStatusChanged.class::cast)
                 .extracting(WorkOrderStatusChanged::from, WorkOrderStatusChanged::to)
                 .containsExactly(tuple(DRAFT, PUBLISHED), tuple(PUBLISHED, CANCELLED));
+    }
+
+    @Test
+    void publishingAndAssigningAlsoAnnounceTheFactOtherModulesReactTo() {
+        var workOrder = WorkOrders.inStatus(DRAFT);
+
+        workOrder.publish();
+        workOrder.route();
+        workOrder.assign(TECHNICIAN);
+
+        assertThat(workOrder.pendingEvents())
+                .filteredOn(e -> !(e instanceof WorkOrderStatusChanged))
+                .satisfiesExactly(
+                        published -> assertThat(published)
+                                .isInstanceOfSatisfying(
+                                        WorkOrderPublished.class,
+                                        p -> assertThat(p.requiredSkills())
+                                                .containsExactly("networking", "pos-terminal")),
+                        assigned -> assertThat(assigned)
+                                .isInstanceOfSatisfying(
+                                        WorkOrderAssigned.class,
+                                        a -> assertThat(a.technicianId()).isEqualTo(TECHNICIAN)));
     }
 }

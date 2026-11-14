@@ -10,7 +10,7 @@ What happens when a part of Dispatch fails, measured on the local stack (step 1.
 | **Keycloak** | Tokens already issued keep working until they expire (5 minutes): the app checks signatures locally with the keys it fetched at startup. New logins fail. | Automatic. | Existing token: 200. New login: connection refused. |
 | **Keycloak, and the app restarts meanwhile** | Every request gets **401**: the restarted app can't fetch the signing keys. | Automatic once Keycloak is back (same token: 200 again). | Kubernetes would restart pods during an identity outage only on a deploy or a crash; avoid deploying while Keycloak is down. |
 | **Object storage** | Confirming an upload answers **503** `unavailable`. Asking for an upload URL and listing files still work: signing a URL is local math, but the URLs are useless until storage is back. The rest of the API is unaffected. | Retry the upload and confirm. Pending uploads that never finish are cleaned up after an hour. | Before the fix: confirm gave a bare 500. |
-| **Technician search slow** | Publishing waits for it (routing runs inside publish). | - | The search takes under 1 ms on 50,000 technicians (docs/perf/geo-search.md). Moves to an event listener in Phase 2. |
+| **Matching fails or the app crashes after a publish** | The work order stays PUBLISHED; nobody gets offers yet. Publishing itself isn't affected: matching runs after the commit, on another thread. | The event stays incomplete in Spring Modulith's registry and is delivered again on the next startup. Routing a work order that's no longer PUBLISHED does nothing, so a second delivery is safe. | `PublishRoutingTests`, `AssignmentNotificationsTests` (step 2.1) |
 
 ## Races and retries
 

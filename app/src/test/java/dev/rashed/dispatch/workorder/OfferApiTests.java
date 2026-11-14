@@ -1,6 +1,7 @@
 package dev.rashed.dispatch.workorder;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.empty;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -14,6 +15,7 @@ import dev.rashed.dispatch.TestTechnicians;
 import dev.rashed.dispatch.TestTokens;
 import dev.rashed.dispatch.TestcontainersConfiguration;
 import dev.rashed.dispatch.tenancy.TenantContext;
+import java.time.Duration;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -92,8 +94,10 @@ class OfferApiTests {
     void withNobodyInRangeTheWorkOrderStaysPublished() throws Exception {
         var workOrder = publish(createWorkOrder(TestTechnicians.uniqueSkill()));
 
-        call(get("/api/work-orders/{id}", workOrder), dispatcher)
-                .andExpect(jsonPath("$.status").value("PUBLISHED"));
+        // Matching runs just after the commit and finds nobody; the status must not move.
+        await().during(Duration.ofSeconds(1))
+                .atMost(Duration.ofSeconds(3))
+                .until(() -> "PUBLISHED".equals(statusOf(workOrder)));
     }
 
     @Test
@@ -177,8 +181,19 @@ class OfferApiTests {
                 .andExpect(status().isForbidden());
     }
 
+    /** Published and routed: matching offers it to nearby technicians just after the publish commits (T16). */
     private UUID publishedWorkOrder() throws Exception {
-        return publish(createWorkOrder(skill));
+        var workOrder = publish(createWorkOrder(skill));
+        await().atMost(Duration.ofSeconds(10)).until(() -> "ROUTED".equals(statusOf(workOrder)));
+        return workOrder;
+    }
+
+    private String statusOf(UUID workOrder) throws Exception {
+        var body = call(get("/api/work-orders/{id}", workOrder), dispatcher)
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+        return JsonPath.read(body, "$.status");
     }
 
     private UUID createWorkOrder(String requiredSkill) throws Exception {
@@ -207,7 +222,9 @@ class OfferApiTests {
     }
 
     private UUID publish(UUID workOrder) throws Exception {
-        call(post("/api/work-orders/{id}/publish", workOrder), dispatcher).andExpect(status().isOk());
+        call(post("/api/work-orders/{id}/publish", workOrder), dispatcher)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("PUBLISHED")); // routing happens after the response
         return workOrder;
     }
 
