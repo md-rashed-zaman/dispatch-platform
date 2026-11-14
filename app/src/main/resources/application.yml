@@ -22,6 +22,14 @@ spring:
       # Events whose listener failed or never finished (crash, deploy) are delivered again on startup.
       # Every instance does this, so listeners must be safe to run twice (T16).
       republish-outstanding-events-on-restart: true
+  mail:
+    host: ${MAIL_HOST:localhost}
+    port: ${MAIL_PORT:1025}
+    properties:
+      # Fail in seconds, not minutes: the sender holds its rows while it waits.
+      mail.smtp.connectiontimeout: 3000
+      mail.smtp.timeout: 5000
+      mail.smtp.writetimeout: 5000
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
     producer:
@@ -77,10 +85,23 @@ dispatch:
     partitions: 6                     # locally; production sizes partitions for its consumers
     replicas: 1
   notification:
-    consumer-enabled: ${NOTIFICATION_CONSUMER_ENABLED:true}
+    consumer-enabled: ${NOTIFICATION_CONSUMER_ENABLED:true}   # also the live-updates listener
     retry:
       initial-interval: PT1S          # then 2 s, 4 s, 8 s; then the dead-letter topic
       max-retries: 4
+  mail:
+    from: "Dispatch <no-reply@dispatch.local>"
+    sender-enabled: ${MAIL_SENDER_ENABLED:true}
+    send-interval: PT2S
+    batch-size: 20
+    max-attempts: 10                  # then the email is marked failed
+    first-retry-after: PT30S          # then 1, 2, 4 min ... at most an hour apart
+    circuit:
+      open-for: PT30S                 # how long the breaker stays open before one trial call
+  live:
+    connection-timeout: PT30M         # dashboards reconnect after this
+  web:
+    base-url: ${WEB_BASE_URL:http://localhost:5173}   # the dashboard, for links in emails
 
 springdoc:
   default-produces-media-type: application/json   # not */*: every endpoint returns JSON
@@ -91,6 +112,11 @@ springdoc:
       use-pkce-with-authorization-code-grant: true
 
 management:
+  health:
+    mail:
+      # Off on purpose: emails are queued and sent later, so a mail server outage must not mark the app
+      # unhealthy (a load balancer would take it out of service for something users don't notice).
+      enabled: false
   endpoints:
     web:
       exposure:

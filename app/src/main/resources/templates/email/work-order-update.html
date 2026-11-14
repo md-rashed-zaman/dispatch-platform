@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<!-- Email HTML: tables and inline styles, because mail clients ignore most modern CSS. Design notes and
+     tokens: docs/design/email.md. The <style> block is only for clients that support dark mode. -->
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta name="supported-color-schemes" content="light dark">
+  <title th:text="${subject}">Subject</title>
+  <style>
+    @media (prefers-color-scheme: dark) {
+      .bg { background: #0F172A !important; }
+      .card { background: #1E293B !important; border-color: #334155 !important; }
+      .details { background: #0F172A !important; border-color: #334155 !important; }
+      .text { color: #F1F5F9 !important; }
+      .muted { color: #94A3B8 !important; }
+      .brand { color: #60A5FA !important; }
+      .brand-mark { background: #60A5FA !important; }
+      .divider { border-color: #334155 !important; }
+    }
+    @media (max-width: 620px) {
+      .card-pad { padding: 24px !important; }
+    }
+  </style>
+</head>
+<body class="bg" style="margin:0; padding:0; background:#F8FAFC;">
+  <!-- Preview text in the inbox list, hidden in the email itself. -->
+  <div style="display:none; max-height:0; overflow:hidden; opacity:0;" th:text="${preheader}">Preheader</div>
+  <table role="presentation" class="bg" width="100%" cellpadding="0" cellspacing="0" border="0"
+         style="background:#F8FAFC;">
+    <tr>
+      <td align="center" style="padding:32px 16px;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;">
+          <!-- Brand -->
+          <tr>
+            <td style="padding:0 4px 16px 4px; font-family:Inter,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+              <span class="brand-mark" style="display:inline-block; width:10px; height:10px; border-radius:3px; background:#2563EB; margin-right:8px; vertical-align:middle;"></span><span class="brand" style="font-size:16px; font-weight:700; letter-spacing:-0.01em; color:#2563EB; vertical-align:middle;">Dispatch</span>
+            </td>
+          </tr>
+          <!-- Card -->
+          <tr>
+            <td class="card card-pad" style="background:#FFFFFF; border:1px solid #E2E8F0; border-radius:12px; padding:32px; font-family:Inter,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+              <!-- Status pill: the tone carries the meaning, the label says it in words. -->
+              <span th:style="${tone == 'attention'}
+                      ? 'display:inline-block; padding:4px 10px; border-radius:999px; font-size:13px; line-height:18px; font-weight:600; background:#FEF3C7; color:#92400E;'
+                      : 'display:inline-block; padding:4px 10px; border-radius:999px; font-size:13px; line-height:18px; font-weight:600; background:#DCFCE7; color:#166534;'"
+                    th:text="${statusLabel}">Status</span>
+              <h1 class="text" style="margin:16px 0 8px 0; font-size:22px; line-height:30px; font-weight:600; letter-spacing:-0.01em; color:#1E293B;"
+                  th:text="${headline}">Headline</h1>
+              <p class="text" style="margin:0 0 24px 0; font-size:16px; line-height:24px; color:#334155;" th:text="${intro}">Intro</p>
+
+              <!-- Details -->
+              <table role="presentation" class="details" width="100%" cellpadding="0" cellspacing="0" border="0"
+                     style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:8px;">
+                <tr th:each="row, i : ${rows}">
+                  <td th:style="'padding:12px 16px;' + (${i.last} ? '' : ' border-bottom:1px solid #E2E8F0;')" class="divider">
+                    <div class="muted" style="font-size:13px; line-height:18px; color:#475569;" th:text="${row.label}">Label</div>
+                    <div class="text" th:style="${row.mono}
+                           ? 'font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:14px; line-height:22px; color:#1E293B; word-break:break-all;'
+                           : 'font-size:16px; line-height:24px; font-weight:500; color:#1E293B;'"
+                         th:text="${row.value}">Value</div>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Call to action: a table cell, so the whole button is clickable in every client. -->
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin-top:24px;">
+                <tr>
+                  <td style="border-radius:8px; background:#2563EB;">
+                    <a th:href="${ctaUrl}" href="#"
+                       style="display:inline-block; padding:12px 20px; min-height:20px; font-size:16px; line-height:20px; font-weight:600; color:#FFFFFF; text-decoration:none; border-radius:8px;"
+                       th:text="${ctaLabel}">Open</a>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <!-- Footer -->
+          <tr>
+            <td class="muted" style="padding:16px 4px 0 4px; font-family:Inter,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; font-size:13px; line-height:20px; color:#475569;">
+              <span th:text="|You get this because ${recipient} is the notification address for ${companyName} on Dispatch.|">Footer</span>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

@@ -1,0 +1,10 @@
+[(${headline})]
+
+[(${intro})]
+[# th:each="row : ${rows}"]
+[(${row.label})]: [(${row.value})][/]
+
+[(${ctaLabel})]: [(${ctaUrl})]
+
+--
+You get this because [(${recipient})] is the notification address for [(${companyName})] on Dispatch.

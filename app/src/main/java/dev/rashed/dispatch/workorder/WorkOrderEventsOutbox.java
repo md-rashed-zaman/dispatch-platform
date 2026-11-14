@@ -27,6 +27,11 @@ class WorkOrderEventsOutbox {
                 event.tenantId(),
                 event.occurredAt(),
                 new WorkOrderStatusChangedV1(
-                        event.workOrderId(), event.from(), event.to(), event.technicianId(), event.occurredAt()));
+                        event.workOrderId(),
+                        event.title(),
+                        event.from(),
+                        event.to(),
+                        event.technicianId(),
+                        event.occurredAt()));
     }
 }

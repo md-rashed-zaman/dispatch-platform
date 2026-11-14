@@ -17,6 +17,7 @@
         <java.version>21</java.version>
         <spring-modulith.version>2.1.1</spring-modulith.version>
         <springdoc.version>3.2.0</springdoc.version>
+        <resilience4j.version>2.4.0</resilience4j.version>
         <spotless.version>3.11.0</spotless.version>
         <palantir-java-format.version>2.103.0</palantir-java-format.version>
         <jacoco.version>0.8.16</jacoco.version>
@@ -60,6 +61,26 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-kafka</artifactId>
+        </dependency>
+        <!-- Email through SMTP (Mailpit locally), from Thymeleaf templates. -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-mail</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-thymeleaf</artifactId>
+        </dependency>
+        <!-- Circuit breaker and retry around SMTP (T20). The core libraries, configured in code. -->
+        <dependency>
+            <groupId>io.github.resilience4j</groupId>
+            <artifactId>resilience4j-circuitbreaker</artifactId>
+            <version>${resilience4j.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.github.resilience4j</groupId>
+            <artifactId>resilience4j-retry</artifactId>
+            <version>${resilience4j.version}</version>
         </dependency>
         <!-- S3 API for photos: SeaweedFS locally, Amazon S3 in the cloud, same code (T15). -->
         <dependency>

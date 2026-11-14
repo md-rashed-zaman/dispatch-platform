@@ -27,10 +27,11 @@ INSERT INTO skill VALUES ('networking'), ('pos-terminal'), ('printer'), ('cctv')
                          ('atm'), ('solar'), ('generator'), ('access-control');
 
 -- Fixed ids: Keycloak test users carry these as their tenant_id claim (infra/compose/keycloak).
-INSERT INTO company (id, name, slug) VALUES
-  ('01930000-0000-7000-8000-000000000001', 'Meghna Bank PLC', 'meghna-bank'),
-  ('01930000-0000-7000-8000-000000000002', 'Shwapno Retail', 'shwapno-retail'),
-  ('01930000-0000-7000-8000-000000000003', 'Padma Garments Ltd', 'padma-garments');
+-- Notification emails go to Mailpit locally (http://localhost:8025); .example can never reach a real inbox.
+INSERT INTO company (id, name, slug, notification_email) VALUES
+  ('01930000-0000-7000-8000-000000000001', 'Meghna Bank PLC', 'meghna-bank', 'dispatch@meghna-bank.example'),
+  ('01930000-0000-7000-8000-000000000002', 'Shwapno Retail', 'shwapno-retail', 'dispatch@shwapno.example'),
+  ('01930000-0000-7000-8000-000000000003', 'Padma Garments Ltd', 'padma-garments', 'dispatch@padma-garments.example');
 
 INSERT INTO technician (id, full_name, phone, skills, home_latitude, home_longitude, service_radius_km, rating, status)
 SELECT gen_random_uuid(),

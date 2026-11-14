@@ -11,6 +11,7 @@ import org.jspecify.annotations.Nullable;
  */
 public record WorkOrderStatusChangedV1(
         UUID workOrderId,
+        String title, // added after the first release: older events on the topic don't have it
         WorkOrderStatus from,
         WorkOrderStatus to,
         @Nullable UUID technicianId,

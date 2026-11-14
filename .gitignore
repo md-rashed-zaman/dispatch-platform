@@ -27,3 +27,6 @@ dist/
 
 # AI eval response cache can be large; results are committed, raw cache is not
 evals/.cache/
+
+# Design hook cache (the config next to it is shared and committed)
+.impeccable/hook.cache.json

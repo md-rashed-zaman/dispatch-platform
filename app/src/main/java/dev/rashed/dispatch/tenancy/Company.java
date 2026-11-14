@@ -6,8 +6,10 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.time.Instant;
+import java.util.Optional;
 import java.util.UUID;
 import org.hibernate.annotations.UuidGenerator;
+import org.jspecify.annotations.Nullable;
 
 /** A tenant: a client company that posts work orders. Aggregate root. */
 @Entity
@@ -25,6 +27,9 @@ public class Company {
 
     @Column(updatable = false)
     private Instant createdAt;
+
+    /** Where the company's notifications go; none without it. Set in the database for now (seed). */
+    private @Nullable String notificationEmail;
 
     protected Company() {} // for JPA
 
@@ -54,6 +59,10 @@ public class Company {
 
     public String slug() {
         return slug;
+    }
+
+    public Optional<String> notificationEmail() {
+        return Optional.ofNullable(notificationEmail);
     }
 
     public Instant createdAt() {
