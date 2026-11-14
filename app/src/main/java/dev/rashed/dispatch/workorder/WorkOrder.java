@@ -104,9 +104,10 @@ public class WorkOrder {
     @Column(updatable = false)
     private Instant createdAt;
 
-    // Published by Spring Data when the repository saves this work order, then cleared.
+    // Published by Spring Data when the repository saves this work order, then cleared. Listeners in other
+    // modules run after the transaction commits (T16), so they never react to a change that was rolled back.
     @Transient
-    private final List<WorkOrderStatusChanged> events = new ArrayList<>();
+    private final List<Object> events = new ArrayList<>();
 
     protected WorkOrder() {} // for JPA
 
@@ -197,6 +198,12 @@ public class WorkOrder {
             throw new BusinessRuleException("Add at least one checklist item before publishing");
         }
         apply(Transition.PUBLISH);
+        events.add(new WorkOrderPublished(
+                id,
+                tenantId,
+                site,
+                requiredSkills().stream().map(Skill::code).sorted().toList(),
+                Timestamps.now()));
     }
 
     /** Offers were sent to the nearest matching technicians (on publish, see WorkOrderService). */
@@ -218,6 +225,7 @@ public class WorkOrder {
         requireAllowed(Transition.ASSIGN);
         this.technicianId = technicianId;
         apply(Transition.ASSIGN);
+        events.add(new WorkOrderAssigned(id, tenantId, technicianId, title, Timestamps.now()));
     }
 
     public void start() {
@@ -271,7 +279,7 @@ public class WorkOrder {
     }
 
     @DomainEvents
-    List<WorkOrderStatusChanged> pendingEvents() {
+    List<Object> pendingEvents() {
         return List.copyOf(events);
     }
 

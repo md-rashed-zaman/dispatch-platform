@@ -43,7 +43,12 @@ WORK_ORDER=$(api POST /api/work-orders "$DISPATCHER" '{
   "timeWindow": {"startsAt": "2026-12-01T04:00:00Z", "endsAt": "2026-12-01T08:00:00Z"},
   "budget": {"minor": 300000, "currency": "BDT"}, "checklist": ["Photo of the working camera"]}' | jq -r .id)
 api POST "/api/work-orders/$WORK_ORDER/publish" "$DISPATCHER" | jq '{status}'
-say "Publishing searched 50,000 technicians for the 10 nearest with the skill (under 1 ms in Postgres) and offered them the job."
+for _ in $(seq 50); do # matching reacts to the publish event just after the commit
+  [[ $(api GET "/api/work-orders/$WORK_ORDER" "$DISPATCHER" | jq -r .status) == ROUTED ]] && break
+  sleep 0.1
+done
+api GET "/api/work-orders/$WORK_ORDER" "$DISPATCHER" | jq '{status}'
+say "Publishing returned at once. Matching reacted to the event after the commit: it searched 50,000 technicians for the 10 nearest with the skill (under 1 ms in Postgres) and offered them the job."
 
 step "Rahim sees the offer"
 OFFERS=$(api GET /api/me/offers "$RAHIM")

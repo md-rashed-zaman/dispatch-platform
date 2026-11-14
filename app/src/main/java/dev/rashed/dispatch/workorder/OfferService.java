@@ -150,6 +150,12 @@ public class OfferService {
                             Transition.ASSIGN.to,
                             technicianId,
                             now));
+                    events.publishEvent(new WorkOrderAssigned(
+                            workOrderId,
+                            offer.tenantId(),
+                            technicianId,
+                            offer.view().title(),
+                            now));
                     return offer.view().withStatus(OfferStatus.ACCEPTED);
                 }));
     }

@@ -17,6 +17,11 @@ spring:
     password: ${POSTGRES_PASSWORD:dispatch}
     placeholders:
       app-password: ${spring.datasource.password}
+  modulith:
+    events:
+      # Events whose listener failed or never finished (crash, deploy) are delivered again on startup.
+      # Every instance does this, so listeners must be safe to run twice (T16).
+      republish-outstanding-events-on-restart: true
   jpa:
     open-in-view: false        # don't hold a DB connection while rendering responses (see T06)
     hibernate:

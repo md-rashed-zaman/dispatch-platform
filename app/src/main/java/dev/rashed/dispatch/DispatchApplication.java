@@ -9,8 +9,10 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.security.SecurityScheme;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.scheduling.annotation.EnableAsync;
 
 @SpringBootApplication
+@EnableAsync // event listeners run on their own threads, after the publishing transaction commits (T16)
 @OpenAPIDefinition(
         info = @Info(title = "Dispatch API", version = "0.1", description = "Multi-tenant field service marketplace"),
         security = @SecurityRequirement(name = "keycloak"))
