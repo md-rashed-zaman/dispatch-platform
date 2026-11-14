@@ -1,6 +1,7 @@
 package dev.rashed.dispatch.web;
 
 import dev.rashed.dispatch.shared.BusinessRuleException;
+import dev.rashed.dispatch.shared.InvalidCursorException;
 import dev.rashed.dispatch.shared.NotFoundException;
 import dev.rashed.dispatch.shared.StaleVersionException;
 import java.net.URI;
@@ -39,6 +40,11 @@ class ApiExceptionHandler extends ResponseEntityExceptionHandler {
         var problem = problem(HttpStatus.CONFLICT, ex.type(), "Not allowed in the current state", ex.getMessage());
         ex.details().forEach(problem::setProperty);
         return problem;
+    }
+
+    @ExceptionHandler
+    ProblemDetail invalidCursor(InvalidCursorException ex) {
+        return problem(HttpStatus.BAD_REQUEST, "invalid-cursor", "Invalid cursor", ex.getMessage());
     }
 
     @ExceptionHandler

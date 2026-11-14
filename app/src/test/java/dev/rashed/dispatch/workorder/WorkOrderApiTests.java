@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.matchesPattern;
+import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -12,9 +13,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.jayway.jsonpath.JsonPath;
 import dev.rashed.dispatch.TestTokens;
 import dev.rashed.dispatch.TestcontainersConfiguration;
 import dev.rashed.dispatch.tenancy.TenantContext;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.Supplier;
@@ -141,9 +145,50 @@ class WorkOrderApiTests {
 
         call(get("/api/work-orders").param("status", "PUBLISHED"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[*].id").value(containsInAnyOrder(published.toString())));
+                .andExpect(jsonPath("$.items[*].id").value(containsInAnyOrder(published.toString())));
         call(get("/api/work-orders"))
-                .andExpect(jsonPath("$[*].id").value(containsInAnyOrder(draft.toString(), published.toString())));
+                .andExpect(jsonPath("$.items[*].id").value(containsInAnyOrder(draft.toString(), published.toString())))
+                .andExpect(jsonPath("$.next").value(nullValue()));
+    }
+
+    @Test
+    void listPagesThroughEveryWorkOrderExactlyOnceNewestFirst() throws Exception {
+        var older = save(WorkOrderStatus.DRAFT);
+        var tied = List.of(save(WorkOrderStatus.DRAFT), save(WorkOrderStatus.DRAFT), save(WorkOrderStatus.DRAFT));
+        var newest = save(WorkOrderStatus.PUBLISHED);
+        // Three created in the same microsecond (bulk imports do this): the id has to break the tie.
+        asTenant(() ->
+                jdbc.update("update work_order set created_at = '2026-11-14T04:00:00Z' where id = any(?)", (Object)
+                        tied.toArray(UUID[]::new)));
+        asTenant(() -> jdbc.update("update work_order set created_at = '2026-11-14T03:00:00Z' where id = ?", older));
+        asTenant(() -> jdbc.update("update work_order set created_at = '2026-11-14T05:00:00Z' where id = ?", newest));
+
+        var seen = new ArrayList<String>();
+        String after = null;
+        do {
+            var request = get("/api/work-orders").param("limit", "2");
+            if (after != null) {
+                request.param("after", after);
+            }
+            var body = call(request).andReturn().getResponse().getContentAsString();
+            seen.addAll(JsonPath.read(body, "$.items[*].id"));
+            after = JsonPath.read(body, "$.next");
+        } while (after != null);
+
+        var tiedNewestIdFirst = tied.stream()
+                .sorted(Comparator.reverseOrder())
+                .map(UUID::toString)
+                .toList();
+        assertThat(seen.getFirst()).isEqualTo(newest.toString());
+        assertThat(seen.subList(1, 4)).isEqualTo(tiedNewestIdFirst);
+        assertThat(seen.getLast()).isEqualTo(older.toString());
+    }
+
+    @Test
+    void listWithAnInvalidCursorIs400() throws Exception {
+        call(get("/api/work-orders").param("after", "bm90LWEtY3Vyc29y"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.type").value("urn:dispatch:problem:invalid-cursor"));
     }
 
     @Test

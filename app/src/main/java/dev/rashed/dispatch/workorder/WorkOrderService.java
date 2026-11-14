@@ -1,11 +1,17 @@
 package dev.rashed.dispatch.workorder;
 
+import dev.rashed.dispatch.shared.Cursor;
+import dev.rashed.dispatch.shared.CursorPage;
+import dev.rashed.dispatch.shared.InvalidCursorException;
 import dev.rashed.dispatch.shared.NotFoundException;
 import dev.rashed.dispatch.shared.StaleVersionException;
 import dev.rashed.dispatch.tenancy.TenantContext;
+import java.time.Instant;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.Consumer;
+import org.jspecify.annotations.Nullable;
 import org.springframework.data.domain.Limit;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -46,12 +52,27 @@ public class WorkOrderService {
         return WorkOrderView.of(workOrders.saveAndFlush(workOrder));
     }
 
+    /**
+     * @param after the {@code next} cursor of the previous page, or null for the first page
+     * @throws InvalidCursorException if {@code after} isn't a cursor from this list
+     */
     @Transactional(readOnly = true)
-    public List<WorkOrderSummary> list(WorkOrderStatus status, int limit) {
-        var found = status == null
-                ? workOrders.findAllByOrderByCreatedAtDesc(Limit.of(limit))
-                : workOrders.findByStatusOrderByCreatedAtDesc(status, Limit.of(limit));
-        return found.stream().map(WorkOrderSummary::of).toList();
+    public CursorPage<WorkOrderSummary> list(@Nullable WorkOrderStatus status, int limit, @Nullable String after) {
+        var rows = Limit.of(limit + 1); // one extra row shows whether there's a next page
+        List<WorkOrder> found;
+        if (after == null) {
+            found = status == null
+                    ? workOrders.findAllByOrderByCreatedAtDescIdDesc(rows)
+                    : workOrders.findByStatusOrderByCreatedAtDescIdDesc(status, rows);
+        } else {
+            var cursor = Cursor.decode(after);
+            var createdAt = createdAtOf(cursor);
+            found = status == null
+                    ? workOrders.findPageAfter(createdAt, cursor.id(), rows)
+                    : workOrders.findPageByStatusAfter(status, createdAt, cursor.id(), rows);
+        }
+        return CursorPage.of(found, limit, w -> new Cursor(w.createdAt().toString(), w.id()))
+                .map(WorkOrderSummary::of);
     }
 
     @Transactional(readOnly = true)
@@ -100,6 +121,14 @@ public class WorkOrderService {
         var workOrder = load(id);
         action.accept(workOrder);
         return WorkOrderView.of(workOrders.saveAndFlush(workOrder));
+    }
+
+    private static Instant createdAtOf(Cursor cursor) {
+        try {
+            return Instant.parse(cursor.sortValue());
+        } catch (DateTimeParseException e) {
+            throw new InvalidCursorException();
+        }
     }
 
     private WorkOrder load(UUID id) {

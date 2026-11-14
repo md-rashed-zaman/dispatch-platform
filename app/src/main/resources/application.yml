@@ -37,6 +37,7 @@ dispatch:
     issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8180/realms/dispatch}
 
 springdoc:
+  default-produces-media-type: application/json   # not */*: every endpoint returns JSON
   swagger-ui:
     operations-sorter: alpha   # by path, so /work-orders/{id}/... actions sit together under the resource
     oauth:
