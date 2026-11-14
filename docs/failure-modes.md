@@ -21,6 +21,9 @@ What happens when a part of Dispatch fails, measured on the local stack (step 1.
 | The winner's phone retries (response lost) | 200 again, same offer. | `OfferApiTests` |
 | The winner double-taps (both requests arrive together) | Both 200. | `FirstAcceptWinsTests` |
 | Two dispatchers edit the same draft | The second save gets 412 (`If-Match` with a stale ETag). Two saves in the same instant: the slower gets 409. | `WorkOrderApiTests` |
+| The same event is delivered twice (consumer crash before its offset commit, a rebalance, an outbox resend) | Processed once: `processed_event` is written in the same transaction as the work, so the second delivery is skipped. Rewinding the notification group to the start of the topic re-read every event and notified nobody again. | `CompanyNotificationsTests` (T19) |
+| A malformed event on the topic | Sent to `dispatch.workorder.events.v1.notification-dlt` at once (retrying can't fix it), with the cause in its headers and an ERROR log line; the consumer carries on. | `CompanyNotificationsTests`, local stack |
+| Notifying fails for a while (mail server down) | Retried in place after 1, 2, 4 and 8 s, holding back only that partition. Then the dead-letter topic, and the consumer carries on. | `CompanyNotificationsTests` |
 | The app crashes mid-accept | The transaction rolls back: the work order stays `ROUTED`, offers unchanged. Nothing half-done. | Postgres transactions |
 | Several app instances run the upload cleanup | Each deletes what's still there; deleting what's gone does nothing. Wasteful, not harmful (ShedLock in Phase 2). | Design |
 

@@ -19,6 +19,8 @@ public class KafkaTestcontainersConfiguration {
         return registry -> {
             registry.add("spring.kafka.bootstrap-servers", kafkaContainer::getBootstrapServers);
             registry.add("dispatch.outbox.relay-enabled", () -> "true");
+            registry.add("dispatch.notification.consumer-enabled", () -> "true");
+            registry.add("dispatch.notification.retry.initial-interval", () -> "PT0.1S");
             registry.add("spring.kafka.admin.auto-create", () -> "true");
             registry.add("dispatch.outbox.relay-interval", () -> "PT0.2S");
             // Give up on an unreachable broker within seconds, so the outage test stays short.

@@ -15,4 +15,9 @@ class LoggingNotifier implements Notifier {
     public void notifyTechnician(UUID technicianId, String message) {
         log.info("To technician {}: {}", technicianId, message);
     }
+
+    @Override
+    public void notifyCompany(UUID tenantId, String message) {
+        log.info("To company {}: {}", tenantId, message);
+    }
 }
