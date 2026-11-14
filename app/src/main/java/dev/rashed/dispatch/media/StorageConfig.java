@@ -4,7 +4,6 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.scheduling.annotation.EnableScheduling;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
@@ -15,7 +14,6 @@ import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 
 @Configuration
 @EnableConfigurationProperties(StorageProperties.class)
-@EnableScheduling // the cleanup of abandoned uploads
 class StorageConfig {
 
     // Path-style URLs (http://host/bucket/key): S3 stand-ins don't do bucket subdomains, and AWS accepts both.

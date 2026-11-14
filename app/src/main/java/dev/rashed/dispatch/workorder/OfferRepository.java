@@ -1,6 +1,7 @@
 package dev.rashed.dispatch.workorder;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -22,4 +23,7 @@ interface OfferRepository extends JpaRepository<Offer, UUID> {
             update Offer o set o.status = OfferStatus.EXPIRED
             where o.workOrderId = :workOrderId and o.id <> :acceptedId and o.status = OfferStatus.OFFERED""")
     int expireOthers(UUID workOrderId, UUID acceptedId);
+
+    @Query("select o.technicianId from Offer o where o.workOrderId = :workOrderId")
+    List<UUID> findTechnicianIdsByWorkOrderId(UUID workOrderId);
 }

@@ -3,6 +3,7 @@ package dev.rashed.dispatch.notification;
 import dev.rashed.dispatch.outbox.Topics;
 import dev.rashed.dispatch.tenancy.TenantDirectory;
 import java.util.UUID;
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,7 +15,8 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
 /**
- * Emails the company when its work order is taken and when the work is ready for approval. Reads the work
+ * Emails the company when its work order is taken, when the work is ready for approval, and when nobody has
+ * taken it for too long (SLA breach). Reads the work
  * order events from Kafka, like a separate notification service would: it shares no transaction or memory
  * with the code that changed the work order.
  *
@@ -67,7 +69,7 @@ class CompanyNotifications {
         if (contact == null) {
             return; // the company hasn't given a notification address
         }
-        var email = templates.forCompany(event.change(), contact.companyName(), contact.email());
+        var email = templates.forCompany(event, contact.companyName(), contact.email());
         if (email == null) {
             return; // a change the company isn't told about
         }
@@ -95,6 +97,7 @@ class CompanyNotifications {
 
     /** Kafka keeps events a week, so nothing older than two weeks can come again. */
     @Scheduled(cron = "0 30 3 * * *")
+    @SchedulerLock(name = "processed-event-cleanup", lockAtMostFor = "PT30M", lockAtLeastFor = "PT1M")
     void deleteOldEntries() {
         var deleted = jdbc.sql("delete from processed_event where processed_at < now() - interval '14 days'")
                 .update();

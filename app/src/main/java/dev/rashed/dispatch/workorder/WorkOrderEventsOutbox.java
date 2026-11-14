@@ -34,4 +34,17 @@ class WorkOrderEventsOutbox {
                         event.technicianId(),
                         event.occurredAt()));
     }
+
+    @EventListener
+    void on(SlaBreached event) {
+        outbox.append(
+                Topics.WORK_ORDER_EVENTS,
+                event.workOrderId().toString(), // same key: it stays in order with the work order's other events
+                WorkOrderSlaBreachedV1.TYPE,
+                WorkOrderSlaBreachedV1.VERSION,
+                event.tenantId(),
+                event.occurredAt(),
+                new WorkOrderSlaBreachedV1(
+                        event.workOrderId(), event.title(), event.waitingSince(), event.occurredAt()));
+    }
 }

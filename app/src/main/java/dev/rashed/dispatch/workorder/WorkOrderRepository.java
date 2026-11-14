@@ -53,4 +53,13 @@ interface WorkOrderRepository extends JpaRepository<WorkOrder, UUID> {
             update WorkOrder w set w.status = :to, w.technicianId = :technicianId, w.version = w.version + 1
             where w.id = :id and w.status in :from""")
     int applyAssignment(UUID id, UUID technicianId, WorkOrderStatus to, Collection<WorkOrderStatus> from);
+
+    /** Waiting for a technician since before the cutoff, at this SLA stage, oldest first (current tenant). */
+    @Query("""
+            select w from WorkOrder w
+            where w.status in :waiting and w.publishedAt < :cutoff and w.slaStage in :stages
+            order by w.publishedAt
+            """)
+    List<WorkOrder> findWaitingSince(
+            Collection<WorkOrderStatus> waiting, Instant cutoff, Collection<SlaStage> stages, Limit limit);
 }

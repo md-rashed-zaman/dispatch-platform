@@ -32,6 +32,7 @@ import java.util.stream.Collectors;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.TenantId;
 import org.hibernate.type.SqlTypes;
+import org.jspecify.annotations.Nullable;
 import org.springframework.data.domain.AfterDomainEventPublication;
 import org.springframework.data.domain.DomainEvents;
 
@@ -99,6 +100,12 @@ public class WorkOrder {
     @JoinColumn(name = "work_order_id", nullable = false, updatable = false)
     @OrderBy("position")
     private List<ChecklistItem> checklist = new ArrayList<>();
+
+    /** When it was last published: the SLA clock (step 2.5). */
+    private @Nullable Instant publishedAt;
+
+    @Enumerated(EnumType.STRING)
+    private SlaStage slaStage = SlaStage.ON_TRACK;
 
     @Version
     private Long version;
@@ -201,12 +208,47 @@ public class WorkOrder {
             throw new BusinessRuleException("Add at least one checklist item before publishing");
         }
         apply(Transition.PUBLISH);
+        this.publishedAt = Timestamps.now();
+        this.slaStage = SlaStage.ON_TRACK;
         events.add(new WorkOrderPublished(
                 id,
                 tenantId,
                 site,
                 requiredSkills().stream().map(Skill::code).sorted().toList(),
                 Timestamps.now()));
+    }
+
+    // ---- SLA policy (step 2.5): only while waiting for a technician, each step once. ----
+
+    /**
+     * Offered to technicians farther away, because nobody nearby took it in time.
+     *
+     * @return false if it's no longer waiting, or the search was already widened
+     */
+    public boolean widenSearch() {
+        if (!isWaitingForTechnician() || slaStage != SlaStage.ON_TRACK) {
+            return false;
+        }
+        this.slaStage = SlaStage.WIDENED;
+        return true;
+    }
+
+    /**
+     * Nobody took it for too long: the company is told ({@link SlaBreached}).
+     *
+     * @return false if it's no longer waiting, or the company was already told
+     */
+    public boolean escalate() {
+        if (!isWaitingForTechnician() || slaStage == SlaStage.ESCALATED) {
+            return false;
+        }
+        this.slaStage = SlaStage.ESCALATED;
+        events.add(new SlaBreached(id, tenantId, title, publishedAt, Timestamps.now()));
+        return true;
+    }
+
+    private boolean isWaitingForTechnician() {
+        return status == WorkOrderStatus.PUBLISHED || status == WorkOrderStatus.ROUTED;
     }
 
     /** Offers were sent to the nearest matching technicians (on publish, see WorkOrderService). */
@@ -347,6 +389,14 @@ public class WorkOrder {
     /** Read-only view: callers can't add or remove items behind the aggregate's back. */
     public List<ChecklistItem> checklist() {
         return List.copyOf(checklist);
+    }
+
+    public @Nullable Instant publishedAt() {
+        return publishedAt;
+    }
+
+    public SlaStage slaStage() {
+        return slaStage;
     }
 
     public Instant createdAt() {

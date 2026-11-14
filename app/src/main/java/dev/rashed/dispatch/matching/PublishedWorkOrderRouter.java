@@ -13,7 +13,7 @@ import org.springframework.transaction.event.TransactionalEventListener;
 
 /**
  * Offers each published work order to the nearest technicians with every required skill. With nobody in
- * range the work order stays PUBLISHED (widening the radius comes with the SLA policy, step 2.5).
+ * range the work order stays PUBLISHED; after 2 hours {@link SlaPolicy} offers it farther away.
  */
 @Component
 class PublishedWorkOrderRouter {

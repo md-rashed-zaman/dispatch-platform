@@ -26,7 +26,8 @@ What happens when a part of Dispatch fails, measured on the local stack (step 1.
 | A malformed event on the topic | Sent to `dispatch.workorder.events.v1.notification-dlt` at once (retrying can't fix it), with the cause in its headers and an ERROR log line; the consumer carries on. | `CompanyNotificationsTests`, local stack |
 | Notifying fails for a while (mail server down) | Retried in place after 1, 2, 4 and 8 s, holding back only that partition. Then the dead-letter topic, and the consumer carries on. | `CompanyNotificationsTests` |
 | The app crashes mid-accept | The transaction rolls back: the work order stays `ROUTED`, offers unchanged. Nothing half-done. | Postgres transactions |
-| Several app instances run the upload cleanup | Each deletes what's still there; deleting what's gone does nothing. Wasteful, not harmful (ShedLock in Phase 2). | Design |
+| Several app instances run the scheduled jobs | ShedLock: each round of the SLA policy and the cleanup jobs runs on one instance; the others skip it. If that instance dies, the lock expires (`lockAtMostFor`) and another takes over. | `SlaPolicyTests`; two-instance cluster: only one instance ran rounds |
+| Two instances run the SLA policy at once anyway (a round outlives its lock) | Each work order is still escalated once: the step checks its stage, and `@Version` lets only one save win. | `SlaPolicyTests` (with and without the lock); cluster rebuilt without the lock: both ran every round, one breach each |
 
 ## Data protection under failure
 

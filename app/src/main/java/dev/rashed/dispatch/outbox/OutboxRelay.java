@@ -8,6 +8,7 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -143,6 +144,7 @@ class OutboxRelay {
 
     /** Published events are kept a week for debugging and replays, then deleted. */
     @Scheduled(cron = "0 15 3 * * *")
+    @SchedulerLock(name = "outbox-cleanup", lockAtMostFor = "PT30M", lockAtLeastFor = "PT1M")
     void deleteOldPublished() {
         var deleted = jdbc.sql("delete from outbox_event where published_at < now() - interval '7 days'")
                 .update(); // one statement: auto-commit is its own transaction
