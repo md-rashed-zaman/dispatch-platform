@@ -33,7 +33,7 @@ Requirements: Docker, JDK 21+.
 
 ```bash
 cp .env.example .env
-docker compose -f infra/compose/docker-compose.yml up -d --wait postgres keycloak
+docker compose -f infra/compose/docker-compose.yml up -d --wait postgres keycloak seaweedfs
 cd app && ./mvnw spring-boot:run
 ```
 
@@ -46,6 +46,7 @@ docker compose -f infra/compose/docker-compose.yml exec -T postgres psql -U disp
 - Health: http://localhost:8080/actuator/health
 - API docs: http://localhost:8080/swagger-ui/index.html (click **Authorize**, log in as a test user below)
 - Keycloak admin console: http://localhost:8180 (admin / admin)
+- Object storage (S3 API): http://localhost:8333, bucket `dispatch-media` (created by the app on startup); keys in `infra/compose/seaweedfs/s3.json`
 
 Test users (password `password` for all; local realm only, defined in `infra/compose/keycloak/dispatch-realm.json`):
 

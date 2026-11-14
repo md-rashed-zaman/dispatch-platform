@@ -10,6 +10,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.jayway.jsonpath.JsonPath;
+import dev.rashed.dispatch.TestTechnicians;
 import dev.rashed.dispatch.TestTokens;
 import dev.rashed.dispatch.TestcontainersConfiguration;
 import dev.rashed.dispatch.tenancy.TenantContext;
