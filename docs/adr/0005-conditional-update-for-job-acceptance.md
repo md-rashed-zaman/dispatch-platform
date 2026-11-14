@@ -34,7 +34,7 @@ WHERE id = :id AND status IN ('ROUTED');   -- the "from" statuses of Transition.
 - **The work order row is updated first.** Every technician accepting this job queues on that one row, so nobody holds an offer row while waiting for it, and the losers touch nothing else. Updating the offer first would let two technicians each hold their own offer while waiting for each other: a deadlock.
 - `version + 1` keeps the ETag honest: a dispatcher's edit based on an older read now gets 412.
 - The statement takes its statuses from the `Transition` table (ADR 0004), so the lifecycle stays defined in one place. It publishes the same `WorkOrderStatusChanged` event that `WorkOrder.assign()` would.
-- **Accepting twice is safe for the winner.** A phone that lost the response retries; if the offer is already `ACCEPTED`, the API returns it again with 200.
+- **Accepting twice is safe for the winner.** A phone that lost the response retries; if the offer is already `ACCEPTED`, the API returns it again with 200. A double tap whose two requests arrive together is different: the second loses the UPDATE to its own twin. So when the UPDATE changes nothing, the accept looks up who holds the job and answers 200 if it's the caller. (Found by the demo script in step 1.8; `FirstAcceptWinsTests` now covers it.)
 - **Last line of defense:** a partial unique index allows at most one `ACCEPTED` offer per work order (V3), whatever the application code does.
 
 How it runs: the technician belongs to no tenant. The request first reads the offer as the technician (row-level security shows technicians only their own offers, V7). Then the accept transaction runs as the work order's tenant, re-checking everything that matters inside its UPDATE statements.

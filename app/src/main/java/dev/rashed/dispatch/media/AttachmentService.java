@@ -1,6 +1,7 @@
 package dev.rashed.dispatch.media;
 
 import dev.rashed.dispatch.identity.CurrentUser;
+import dev.rashed.dispatch.shared.DependencyUnavailableException;
 import dev.rashed.dispatch.shared.NotFoundException;
 import dev.rashed.dispatch.tenancy.TenantContext;
 import dev.rashed.dispatch.workorder.WorkOrderAccess;
@@ -15,6 +16,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
+import software.amazon.awssdk.core.exception.SdkClientException;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.HeadObjectResponse;
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
@@ -99,14 +101,15 @@ public class AttachmentService {
         }
         HeadObjectResponse stored;
         try {
-            stored = s3.headObject(h -> h.bucket(storage.bucket()).key(attachment.objectKey()));
+            stored = reachStorage(
+                    () -> s3.headObject(h -> h.bucket(storage.bucket()).key(attachment.objectKey())));
         } catch (NoSuchKeyException e) {
             throw new AttachmentRuleException(
                     "upload-missing", "Nothing has been uploaded yet. Upload the file, then confirm.");
         }
         var problem = problemWith(attachment, stored);
         if (problem != null) {
-            s3.deleteObject(d -> d.bucket(storage.bucket()).key(attachment.objectKey()));
+            reachStorage(() -> s3.deleteObject(d -> d.bucket(storage.bucket()).key(attachment.objectKey())));
             asTenant(workOrder, () -> {
                 attachments.deleteById(attachmentId);
                 return null;
@@ -146,12 +149,24 @@ public class AttachmentService {
         // shortcut: checks the signature bytes only. Decoding images and stripping EXIF (GPS location) comes
         // with photo processing for the AI completion audit (step 3.5); scanning for malware before others
         // download files, with real users.
-        var firstBytes = s3.getObjectAsBytes(g -> g.bucket(storage.bucket())
+        var firstBytes = reachStorage(() -> s3.getObjectAsBytes(g -> g.bucket(storage.bucket())
                         .key(attachment.objectKey())
-                        .range("bytes=0-" + (FileType.SIGNATURE_LENGTH - 1)))
+                        .range("bytes=0-" + (FileType.SIGNATURE_LENGTH - 1))))
                 .asByteArray();
         var type = FileType.of(attachment.contentType()).orElseThrow();
         return type.matches(firstBytes) ? null : "The file's content isn't a real " + type.extension + " file.";
+    }
+
+    /**
+     * Storage not answering at all (down, unreachable, timing out) becomes a 503 the client can retry. Answers
+     * from storage, like "no such key", pass through unchanged. Presigning needs no call: it's local signing.
+     */
+    private static <T> T reachStorage(Supplier<T> call) {
+        try {
+            return call.get();
+        } catch (SdkClientException e) {
+            throw new DependencyUnavailableException("file storage", e);
+        }
     }
 
     private WorkOrderRef openWorkOrder(UUID workOrderId) {

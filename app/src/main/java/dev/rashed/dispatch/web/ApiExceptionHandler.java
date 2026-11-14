@@ -1,6 +1,7 @@
 package dev.rashed.dispatch.web;
 
 import dev.rashed.dispatch.shared.BusinessRuleException;
+import dev.rashed.dispatch.shared.DependencyUnavailableException;
 import dev.rashed.dispatch.shared.InvalidCursorException;
 import dev.rashed.dispatch.shared.NotFoundException;
 import dev.rashed.dispatch.shared.StaleVersionException;
@@ -8,6 +9,9 @@ import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import org.jspecify.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataAccessResourceFailureException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
@@ -15,6 +19,7 @@ import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.transaction.CannotCreateTransactionException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -25,10 +30,12 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 /**
  * Turns exceptions into Problem Details ({@code application/problem+json}), so clients handle every error
  * the same way. The base class already covers Spring MVC's own errors (malformed JSON, wrong types, ...).
- * Anything unexpected is left to Spring Boot: a generic 500 with no stack trace, logged on the server.
+ * Anything unexpected becomes a generic 500 Problem Details, with the stack trace only in the server log.
  */
 @RestControllerAdvice
 class ApiExceptionHandler extends ResponseEntityExceptionHandler {
+
+    private static final Logger log = LoggerFactory.getLogger(ApiExceptionHandler.class);
 
     @ExceptionHandler
     ProblemDetail notFound(NotFoundException ex) {
@@ -40,6 +47,42 @@ class ApiExceptionHandler extends ResponseEntityExceptionHandler {
         var problem = problem(HttpStatus.CONFLICT, ex.type(), "Not allowed in the current state", ex.getMessage());
         ex.details().forEach(problem::setProperty);
         return problem;
+    }
+
+    /**
+     * The database or storage is down. 503 with Retry-After tells clients (and load balancers) that the request
+     * was fine and that trying again shortly is the right move, instead of a bare 500 (docs/failure-modes.md).
+     */
+    @ExceptionHandler({
+        DependencyUnavailableException.class,
+        CannotCreateTransactionException.class,
+        DataAccessResourceFailureException.class
+    })
+    ResponseEntity<ProblemDetail> unavailable(Exception ex) {
+        var what = ex instanceof DependencyUnavailableException d ? d.dependency() : "the database";
+        log.warn("Request failed because {} is unavailable: {}", what, ex.getMessage());
+        var problem = problem(
+                HttpStatus.SERVICE_UNAVAILABLE,
+                "unavailable",
+                "Temporarily unavailable",
+                "Dispatch can't reach " + what + " right now. Try again in a few seconds.");
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                .header(HttpHeaders.RETRY_AFTER, "5")
+                .body(problem);
+    }
+
+    /**
+     * Anything not handled more specifically: logged with its stack trace on the server, and answered in the
+     * same Problem Details format as every other error, without internals.
+     */
+    @ExceptionHandler
+    ProblemDetail unexpected(Exception ex) {
+        log.error("Unexpected error", ex);
+        return problem(
+                HttpStatus.INTERNAL_SERVER_ERROR,
+                "internal-error",
+                "Something went wrong",
+                "Something went wrong on our side. It has been logged.");
     }
 
     @ExceptionHandler
