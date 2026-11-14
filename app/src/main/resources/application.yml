@@ -22,6 +22,19 @@ spring:
       # Events whose listener failed or never finished (crash, deploy) are delivered again on startup.
       # Every instance does this, so listeners must be safe to run twice (T16).
       republish-outstanding-events-on-restart: true
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      acks: all                       # the broker confirms only once the event is safely stored
+      properties:
+        enable.idempotence: true      # a retried send can't create a duplicate or reorder within a partition
+        max.in.flight.requests.per.connection: 5   # the most idempotence allows while keeping order
+        linger.ms: 5                  # wait up to 5 ms to batch sends together
+        max.block.ms: 10000           # with Kafka down, fail a send after 10 s instead of 60
+        request.timeout.ms: 10000
+        delivery.timeout.ms: 30000    # must be >= linger.ms + request.timeout.ms, or the producer won't start
   jpa:
     open-in-view: false        # don't hold a DB connection while rendering responses (see T06)
     hibernate:
@@ -53,6 +66,13 @@ dispatch:
     access-key: ${S3_ACCESS_KEY:dispatch}
     secret-key: ${S3_SECRET_KEY:dispatch-secret}
     create-bucket: ${S3_CREATE_BUCKET:true}
+  outbox:
+    relay-enabled: ${OUTBOX_RELAY_ENABLED:true}
+    relay-interval: PT0.5S            # how often the relay looks for new events
+    batch-size: 100
+    send-timeout: PT35S               # longer than delivery.timeout.ms, so Kafka's own verdict comes first
+    partitions: 6                     # locally; production sizes partitions for its consumers
+    replicas: 1
 
 springdoc:
   default-produces-media-type: application/json   # not */*: every endpoint returns JSON

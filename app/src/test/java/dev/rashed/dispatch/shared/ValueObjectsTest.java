@@ -37,4 +37,14 @@ class ValueObjectsTest {
         assertThatIllegalArgumentException().isThrownBy(() -> Skill.codes(List.of("POS Terminal")));
         assertThatIllegalArgumentException().isThrownBy(() -> Skill.codes(List.of()));
     }
+
+    @Test
+    void uuidV7IsVersion7AndTimeOrdered() throws InterruptedException {
+        var first = Uuids.v7();
+        Thread.sleep(2);
+        var second = Uuids.v7();
+        assertThat(first.version()).isEqualTo(7);
+        assertThat(first.variant()).isEqualTo(2);
+        assertThat(first.toString()).isLessThan(second.toString()); // later ms sort later, as Postgres sorts them
+    }
 }

@@ -15,6 +15,7 @@ Built as a portfolio project to show production backend engineering: correctness
 | **Geo search in under a millisecond** | "Verified technicians with these skills within 20 km, nearest first" over 50,000 technicians: 29.5 ms with no indexes, **0.8 ms** after rewriting one condition the planner misjudged (estimated 5 rows, actually 22,500). | [docs/perf/geo-search.md](docs/perf/geo-search.md) |
 | **Lifecycle that can't be broken** | A ten-row transition table; every command from every status is tested (90 pairs). Edits need `If-Match`, so nobody overwrites changes they haven't seen (412). | [ADR 0004](docs/adr/0004-hand-written-state-machine.md), [lifecycle](docs/diagrams/work-order-lifecycle.md) |
 | **Photos without touching the API** | Presigned URLs signed for one key, content type and size, valid 5 minutes. Confirm checks what arrived, down to the first bytes. Same code on SeaweedFS locally and Amazon S3. | [upload flow](docs/diagrams/attachment-upload.md), `AttachmentApiTests` |
+| **Events that can't get lost** | Every lifecycle change goes to Kafka through a transactional outbox: the event row commits with the change, and a relay sends it. Kafka down, or the app killed with `kill -9`: requests keep succeeding and every event arrives later, in order per work order. | [ADR 0006](docs/adr/0006-polling-outbox-before-cdc.md), `OutboxRelayTests` |
 | **Fails politely** | Database or storage down: 503 with `Retry-After` within 3 s, readiness `DOWN`, automatic recovery. Every error is RFC 9457 Problem Details. | [docs/failure-modes.md](docs/failure-modes.md) |
 
 ## Architecture
@@ -43,19 +44,21 @@ flowchart LR
 flowchart LR
   web["Dispatcher web app<br/>(later)"]
   phone["Technician app"]
-  api["<b>Dispatch API</b><br/>Spring Boot modular monolith, Java 21<br/>modules: identity, tenancy, workorder,<br/>technician, media, web"]
+  api["<b>Dispatch API</b><br/>Spring Boot modular monolith, Java 21<br/>modules: identity, tenancy, workorder,<br/>technician, matching, notification,<br/>media, outbox, web"]
   pg[("PostgreSQL 17<br/>PostGIS, pgvector,<br/>row-level security")]
   kc["Keycloak 26<br/>OAuth2 / OIDC"]
   s3[("SeaweedFS<br/>S3 API")]
+  kafka[["Kafka 4 (KRaft)<br/>dispatch.workorder.events.v1"]]
   web -- "REST + JWT" --> api
   phone -- "REST + JWT" --> api
   phone -- "PUT bytes, presigned" --> s3
   api -- "JDBC as dispatch_app,<br/>so RLS applies" --> pg
   api -- "fetches signing keys" --> kc
   api -- "HEAD, ranged GET, DELETE" --> s3
+  api -- "outbox relay:<br/>work order events" --> kafka
 ```
 
-Modules talk through public APIs and events only; Spring Modulith fails the build on a boundary violation. Workorder never calls matching: matching reacts to `WorkOrderPublished` after the commit, and notification to `WorkOrderAssigned`. The [context map](docs/diagrams/context-map.md) shows the planned modules (matching, payment, ledger, notification, AI) and the events between them.
+Modules talk through public APIs and events only; Spring Modulith fails the build on a boundary violation. Workorder never calls matching: matching reacts to `WorkOrderPublished` after the commit, and notification to `WorkOrderAssigned`. Other systems get every status change from Kafka, keyed by work order id. The [context map](docs/diagrams/context-map.md) shows the planned modules (matching, payment, ledger, notification, AI) and the events between them.
 
 **From publish to accept:**
 
@@ -79,7 +82,7 @@ sequenceDiagram
   API-->>T: winner 200, everyone else 409 already-taken
 ```
 
-Stack: Spring Boot 4.1, Spring Modulith 2.1, Hibernate 7, Flyway, PostgreSQL 17 + PostGIS + pgvector, Keycloak 26, AWS SDK v2 against SeaweedFS, Testcontainers, JUnit 5, Spotless, JaCoCo, GitHub Actions.
+Stack: Spring Boot 4.1, Spring Modulith 2.1, Hibernate 7, Flyway, PostgreSQL 17 + PostGIS + pgvector, Keycloak 26, Kafka 4 (KRaft) with Spring for Apache Kafka, AWS SDK v2 against SeaweedFS, Testcontainers, JUnit 5, Spotless, JaCoCo, GitHub Actions.
 
 ## Documentation
 
@@ -95,7 +98,7 @@ Requirements: Docker, JDK 21+.
 
 ```bash
 cp .env.example .env
-docker compose -f infra/compose/docker-compose.yml up -d --wait postgres keycloak seaweedfs
+docker compose -f infra/compose/docker-compose.yml up -d --wait postgres keycloak seaweedfs kafka
 cd app && ./mvnw spring-boot:run
 ```
 
@@ -109,6 +112,7 @@ docker compose -f infra/compose/docker-compose.yml exec -T postgres psql -U disp
 - API docs: http://localhost:8080/swagger-ui/index.html (click **Authorize**, log in as a test user below)
 - Keycloak admin console: http://localhost:8180 (admin / admin)
 - Object storage (S3 API): http://localhost:8333, bucket `dispatch-media` (created by the app on startup); keys in `infra/compose/seaweedfs/s3.json`
+- Kafka: `localhost:9092`, topic `dispatch.workorder.events.v1` (created by the app on startup). Kafka UI: `docker compose -f infra/compose/docker-compose.yml --profile tools up -d kafka-ui`, then http://localhost:8090
 
 Test users (password `password` for all; local realm only, defined in `infra/compose/keycloak/dispatch-realm.json`):
 
