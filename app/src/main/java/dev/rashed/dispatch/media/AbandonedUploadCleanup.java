@@ -5,6 +5,7 @@ import dev.rashed.dispatch.tenancy.TenantContext;
 import dev.rashed.dispatch.tenancy.TenantDirectory;
 import java.time.Duration;
 import java.time.Instant;
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Limit;
@@ -16,7 +17,7 @@ import software.amazon.awssdk.services.s3.S3Client;
 
 /**
  * Deletes uploads that were started but never confirmed (the app crashed, the user gave up), and their
- * files. Safe to run on every instance at once: deleting what's already gone does nothing.
+ * files. One instance runs it at a time; deleting what's already gone does nothing, so a second run is harmless.
  */
 @Component
 class AbandonedUploadCleanup {
@@ -47,9 +48,9 @@ class AbandonedUploadCleanup {
         this.transaction = new TransactionTemplate(transactionManager);
     }
 
-    // shortcut: every instance runs it. Harmless (deletes are idempotent) but wasteful; ShedLock makes one
-    // instance run it at a time from Phase 2 (T22).
+    // One instance at a time (T22). Running twice would still be harmless: deleting what's gone does nothing.
     @Scheduled(fixedDelayString = "PT10M", initialDelayString = "PT1M")
+    @SchedulerLock(name = "abandoned-upload-cleanup", lockAtMostFor = "PT9M")
     void run() {
         var removed = removeOlderThan(Timestamps.now().minus(ABANDONED_AFTER));
         if (removed > 0) {

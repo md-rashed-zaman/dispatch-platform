@@ -1,7 +1,6 @@
 package dev.rashed.dispatch.notification;
 
 import dev.rashed.dispatch.outbox.Topics;
-import dev.rashed.dispatch.workorder.WorkOrderStatusChangedV1;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.Map;
@@ -19,7 +18,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 /**
- * Pushes every work order change to the company's open dashboards over server-sent events (ADR 0007, T21).
+ * Pushes every work order change (and SLA breach) to the company's open dashboards over server-sent events (ADR 0007, T21).
  *
  * <p>Each app instance holds only its own connections, so each instance must see every event: the listener
  * joins a consumer group of its own (a random group id per instance) and starts at the latest offset. A
@@ -73,8 +72,8 @@ class LiveUpdates {
             }
             var update = SseEmitter.event()
                     .id(event.eventId().toString())
-                    .name(WorkOrderStatusChangedV1.TYPE)
-                    .data(event.change(), MediaType.APPLICATION_JSON);
+                    .name(event.type())
+                    .data(event.payload(), MediaType.APPLICATION_JSON);
             // shortcut: sends on the consumer thread, so a client that stops reading slows the others once its
             // buffer is full; hand each connection its own queue when there are many dashboards.
             open.forEach(emitter -> send(emitter, update));

@@ -18,6 +18,7 @@
         <spring-modulith.version>2.1.1</spring-modulith.version>
         <springdoc.version>3.2.0</springdoc.version>
         <resilience4j.version>2.4.0</resilience4j.version>
+        <shedlock.version>7.11.0</shedlock.version>
         <spotless.version>3.11.0</spotless.version>
         <palantir-java-format.version>2.103.0</palantir-java-format.version>
         <jacoco.version>0.8.16</jacoco.version>
@@ -81,6 +82,17 @@
             <groupId>io.github.resilience4j</groupId>
             <artifactId>resilience4j-retry</artifactId>
             <version>${resilience4j.version}</version>
+        </dependency>
+        <!-- Scheduled jobs run on one instance at a time: a lock row in PostgreSQL (T22). -->
+        <dependency>
+            <groupId>net.javacrumbs.shedlock</groupId>
+            <artifactId>shedlock-spring</artifactId>
+            <version>${shedlock.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>net.javacrumbs.shedlock</groupId>
+            <artifactId>shedlock-provider-jdbc-template</artifactId>
+            <version>${shedlock.version}</version>
         </dependency>
         <!-- S3 API for photos: SeaweedFS locally, Amazon S3 in the cloud, same code (T15). -->
         <dependency>

@@ -18,6 +18,7 @@ Built as a portfolio project to show production backend engineering: correctness
 | **Events that can't get lost** | Every lifecycle change goes to Kafka through a transactional outbox: the event row commits with the change, and a relay sends it. Kafka down, or the app killed with `kill -9`: requests keep succeeding and every event arrives later, in order per work order. | [ADR 0006](docs/adr/0006-polling-outbox-before-cdc.md), `OutboxRelayTests` |
 | **Consumers that survive real delivery** | The notification consumer deduplicates by event id in the same transaction as its work, retries temporary failures with exponential backoff, and moves poison messages to a dead-letter topic without stopping. Replaying the whole topic notified nobody twice. | `CompanyNotificationsTests`, [failure modes](docs/failure-modes.md) |
 | **Live dashboard, email that can wait** | Dispatchers get every change of their company's work orders over server-sent events within a second; every app instance reads every event, so it works behind a load balancer. Emails are queued, sent through a circuit breaker, and retried for hours: with the mail server down, the API doesn't slow down and no email is lost. | [ADR 0007](docs/adr/0007-sse-over-websocket.md), `LiveUpdatesTests`, `EmailSenderTests` |
+| **Jobs that run once on many instances** | Work orders nobody takes are offered farther away after 2 hours and escalated to the company after 6. ShedLock runs each round on one instance; every step is also guarded by state and version, so even two runs at once change each work order once. Two instances and a load balancer locally: `--profile cluster`. | `SlaPolicyTests`, [failure modes](docs/failure-modes.md) |
 | **Fails politely** | Database or storage down: 503 with `Retry-After` within 3 s, readiness `DOWN`, automatic recovery. Every error is RFC 9457 Problem Details. | [docs/failure-modes.md](docs/failure-modes.md) |
 
 ## Architecture
@@ -114,6 +115,7 @@ docker compose -f infra/compose/docker-compose.yml exec -T postgres psql -U disp
 - API docs: http://localhost:8080/swagger-ui/index.html (click **Authorize**, log in as a test user below)
 - Keycloak admin console: http://localhost:8180 (admin / admin)
 - Object storage (S3 API): http://localhost:8333, bucket `dispatch-media` (created by the app on startup); keys in `infra/compose/seaweedfs/s3.json`
+- Two instances behind a load balancer: `cd app && ./mvnw package -DskipTests`, stop the app on 8080, then `docker compose -f infra/compose/docker-compose.yml --profile cluster up -d --build` (http://localhost:8088; Linux host networking)
 - Mailpit (every email the app sends, nothing leaves the machine): http://localhost:8025
 - Live updates: `curl -N -H "Authorization: Bearer $TOKEN" http://localhost:8080/api/live/work-orders`
 - Kafka: `localhost:9092`, topic `dispatch.workorder.events.v1` (created by the app on startup). Kafka UI: `docker compose -f infra/compose/docker-compose.yml --profile tools up -d kafka-ui`, then http://localhost:8090

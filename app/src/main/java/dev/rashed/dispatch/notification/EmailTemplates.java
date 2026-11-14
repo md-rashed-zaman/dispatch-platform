@@ -1,11 +1,16 @@
 package dev.rashed.dispatch.notification;
 
+import dev.rashed.dispatch.workorder.WorkOrderSlaBreachedV1;
 import dev.rashed.dispatch.workorder.WorkOrderStatus;
 import dev.rashed.dispatch.workorder.WorkOrderStatusChangedV1;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -22,6 +27,11 @@ class EmailTemplates {
 
     private static final String TEMPLATE = "email/work-order-update";
 
+    // shortcut: every company is in Bangladesh for now; store a time zone per company when that changes.
+    private static final ZoneId DHAKA = ZoneId.of("Asia/Dhaka");
+    private static final DateTimeFormatter WAITING_SINCE =
+            DateTimeFormatter.ofPattern("d MMM yyyy, HH:mm 'Dhaka time'", Locale.ENGLISH);
+
     record Row(String label, String value, boolean mono) {}
 
     private final TemplateEngine engine;
@@ -32,9 +42,18 @@ class EmailTemplates {
         this.webBaseUrl = webBaseUrl;
     }
 
-    /** @return the email, or null for a change the company isn't told about */
-    EmailOutbox.@Nullable Email forCompany(WorkOrderStatusChangedV1 change, String companyName, String recipient) {
-        var title = change.title() == null ? "Work order " + change.workOrderId() : change.title();
+    /** @return the email, or null for an event the company isn't told about */
+    EmailOutbox.@Nullable Email forCompany(
+            WorkOrderEventReader.WorkOrderEvent event, String companyName, String recipient) {
+        return switch (event) {
+            case WorkOrderEventReader.StatusChange change -> statusChange(change.payload(), companyName, recipient);
+            case WorkOrderEventReader.SlaBreach breach -> slaBreach(breach.payload(), companyName, recipient);
+        };
+    }
+
+    private EmailOutbox.@Nullable Email statusChange(
+            WorkOrderStatusChangedV1 change, String companyName, String recipient) {
+        var title = titleOf(change.title(), change.workOrderId());
         var model = switch (change.to()) {
             case ASSIGNED ->
                 model(
@@ -57,14 +76,38 @@ class EmailTemplates {
         if (model == null) {
             return null;
         }
+        model.put("title", title);
+        return render(
+                model, change.workOrderId(), new Row("Status", label(change.to()), false), companyName, recipient);
+    }
+
+    private EmailOutbox.Email slaBreach(WorkOrderSlaBreachedV1 breach, String companyName, String recipient) {
+        var title = titleOf(breach.title(), breach.workOrderId());
+        var model = model(
+                "No technician yet: " + title,
+                "No technician yet",
+                "attention",
+                "Nobody has taken this work order yet",
+                "We offered it to technicians nearby, then farther away, and nobody accepted. A higher budget, a wider"
+                        + " time window or a technician you know usually gets it moving.",
+                "Open work order");
+        model.put("title", title);
+        var waiting = breach.waitingSince() == null
+                ? "Unknown"
+                : WAITING_SINCE.format(breach.waitingSince().atZone(DHAKA));
+        return render(model, breach.workOrderId(), new Row("Waiting since", waiting, false), companyName, recipient);
+    }
+
+    private EmailOutbox.Email render(
+            Map<String, Object> model, UUID workOrderId, Row middle, String companyName, String recipient) {
         model.putAll(Map.of(
                 "rows",
                 List.of(
-                        new Row("Work order", title, false),
-                        new Row("Status", label(change.to()), false),
-                        new Row("Reference", change.workOrderId().toString(), true)),
+                        new Row("Work order", (String) model.get("title"), false),
+                        middle,
+                        new Row("Reference", workOrderId.toString(), true)),
                 "ctaUrl",
-                webBaseUrl + "/work-orders/" + change.workOrderId(),
+                webBaseUrl + "/work-orders/" + workOrderId,
                 "companyName",
                 companyName,
                 "recipient",
@@ -78,6 +121,10 @@ class EmailTemplates {
                 (String) model.get("subject"),
                 engine.process(TEMPLATE + ".txt", context),
                 engine.process(TEMPLATE, context));
+    }
+
+    private static String titleOf(@Nullable String title, UUID workOrderId) {
+        return title == null ? "Work order " + workOrderId : title;
     }
 
     private static Map<String, Object> model(

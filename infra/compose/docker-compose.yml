@@ -2,6 +2,19 @@
 # Memory limits keep the stack usable on an 8 GB laptop.
 name: dispatch
 
+# What both app instances of the "cluster" profile share (step 2.5).
+x-app: &app
+  profiles: [cluster]
+  image: dispatch-app:local
+  network_mode: host
+  mem_limit: 640m
+  depends_on:
+    postgres: { condition: service_healthy }
+    kafka: { condition: service_healthy }
+    keycloak: { condition: service_healthy }
+    seaweedfs: { condition: service_healthy }
+    mailpit: { condition: service_healthy }
+
 services:
   postgres:
     build: ./postgres
@@ -127,6 +140,35 @@ services:
       kafka:
         condition: service_healthy
     mem_limit: 512m
+
+
+  # Two app instances behind a load balancer (step 2.5): docker compose --profile cluster up -d --build
+  # Build the jar first (cd app && ./mvnw package -DskipTests) and stop any app on 8080. Host networking, so
+  # the instances reach Postgres, Kafka, Keycloak and SeaweedFS on localhost exactly like ./mvnw spring-boot:run
+  # does, and presigned URLs and token issuers stay the same (Linux; Docker Desktop needs host networking on).
+  app-1:
+    <<: *app
+    build: ../../app  # app-2 runs the same image; building it twice at once fails
+    environment:
+      SERVER_PORT: "8081"
+      INSTANCE_NAME: app-1
+      DB_APP_PASSWORD: ${DB_APP_PASSWORD:-dispatch_app}
+
+  app-2:
+    <<: *app
+    environment:
+      SERVER_PORT: "8082"
+      INSTANCE_NAME: app-2
+      DB_APP_PASSWORD: ${DB_APP_PASSWORD:-dispatch_app}
+
+  lb:
+    profiles: [cluster]
+    image: nginx:1.30.6-alpine
+    network_mode: host
+    volumes:
+      - ./nginx/cluster.conf:/etc/nginx/nginx.conf:ro
+    mem_limit: 32m
+    depends_on: [app-1, app-2]
 
 volumes:
   postgres-data:

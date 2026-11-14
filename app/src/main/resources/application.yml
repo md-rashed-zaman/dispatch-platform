@@ -100,6 +100,12 @@ dispatch:
       open-for: PT30S                 # how long the breaker stays open before one trial call
   live:
     connection-timeout: PT30M         # dashboards reconnect after this
+  sla:
+    widen-after: PT2H                 # nobody took it: offer it farther away
+    escalate-after: PT6H              # still nobody: tell the company
+    widened-radius-km: 40
+    check-interval: PT1M
+  instance-name: ${INSTANCE_NAME:${HOSTNAME:local}}   # in logs, to see which instance did what
   web:
     base-url: ${WEB_BASE_URL:http://localhost:5173}   # the dashboard, for links in emails
 

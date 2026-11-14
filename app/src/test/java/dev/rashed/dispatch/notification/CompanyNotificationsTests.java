@@ -15,6 +15,7 @@ import dev.rashed.dispatch.KafkaTestcontainersConfiguration;
 import dev.rashed.dispatch.TestcontainersConfiguration;
 import dev.rashed.dispatch.outbox.OutboxEnvelope;
 import dev.rashed.dispatch.outbox.Topics;
+import dev.rashed.dispatch.workorder.WorkOrderSlaBreachedV1;
 import dev.rashed.dispatch.workorder.WorkOrderStatus;
 import dev.rashed.dispatch.workorder.WorkOrderStatusChangedV1;
 import java.nio.charset.StandardCharsets;
@@ -91,6 +92,27 @@ class CompanyNotificationsTests {
                 .contains("Waiting for approval")
                 .contains("href=\"http://localhost:5173/work-orders/" + workOrder + "\"")
                 .doesNotContain(" th:"); // every template attribute was processed
+    }
+
+    @Test
+    void anSlaBreachTellsTheCompanySinceWhenItHasWaited() {
+        var eventId = UUID.randomUUID();
+        sentEventIds.add(eventId);
+        send(json.writeValueAsString(new OutboxEnvelope(
+                eventId,
+                WorkOrderSlaBreachedV1.TYPE,
+                WorkOrderSlaBreachedV1.VERSION,
+                Instant.now(),
+                tenant,
+                workOrder.toString(),
+                new WorkOrderSlaBreachedV1(
+                        workOrder, "CCTV camera offline", Instant.parse("2026-11-15T03:00:00Z"), Instant.now()))));
+
+        var email = awaitEmails(1).getFirst();
+        assertThat(email.subject()).isEqualTo("No technician yet: CCTV camera offline");
+        assertThat(email.text())
+                .contains("Nobody has taken this work order yet")
+                .contains("Waiting since: 15 Nov 2026, 09:00 Dhaka time"); // 03:00 UTC is 09:00 in Dhaka
     }
 
     @Test
