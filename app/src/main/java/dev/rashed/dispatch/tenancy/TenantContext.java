@@ -5,8 +5,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Supplier;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.oauth2.jwt.Jwt;
 
 /**
  * Which tenant the current thread works for. In a web request it comes from the verified access token's
@@ -26,11 +24,7 @@ public final class TenantContext {
         if (explicit != null) {
             return Optional.of(explicit);
         }
-        var authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication != null && authentication.getPrincipal() instanceof Jwt jwt) {
-            return Optional.ofNullable(CurrentUser.from(jwt).tenantId());
-        }
-        return Optional.empty();
+        return CurrentUser.current().map(CurrentUser::tenantId);
     }
 
     /** Runs {@code action} as {@code tenantId}, then restores whatever was current before. */

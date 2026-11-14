@@ -51,6 +51,12 @@ CROSS JOIN LATERAL (
   SELECT * FROM (SELECT city.*, sum(share) OVER (ORDER BY share DESC, name) AS upto FROM city) ranked
   WHERE g % 100 < upto ORDER BY upto LIMIT 1) c;
 
+-- Fixed id: the Keycloak user tech.rahim carries it as the technician_id claim. Lives in Gulshan, so
+-- work orders published nearby are offered to this technician.
+INSERT INTO technician (id, full_name, phone, skills, home_latitude, home_longitude, service_radius_km, rating, status)
+VALUES ('01930000-0000-7000-8000-0000000000a1', 'Rahim Uddin', '+8801900000001',
+        '{cctv,networking,pos-terminal,printer}', 23.7925, 90.4125, 30, 4.80, 'VERIFIED');
+
 CREATE TEMP TABLE seeded_work_order ON COMMIT DROP AS
 SELECT gen_random_uuid() AS id, g FROM generate_series(1, 30) g;
 

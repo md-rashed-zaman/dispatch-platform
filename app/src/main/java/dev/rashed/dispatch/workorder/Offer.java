@@ -10,6 +10,7 @@ import jakarta.persistence.Table;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
+import org.hibernate.annotations.TenantId;
 import org.hibernate.annotations.UuidGenerator;
 
 /**
@@ -23,6 +24,9 @@ public class Offer {
     @Id
     @UuidGenerator(style = UuidGenerator.Style.VERSION_7)
     private UUID id;
+
+    @TenantId
+    private UUID tenantId;
 
     private UUID workOrderId;
 
@@ -54,6 +58,10 @@ public class Offer {
 
     public UUID id() {
         return id;
+    }
+
+    public UUID tenantId() {
+        return tenantId;
     }
 
     public UUID workOrderId() {

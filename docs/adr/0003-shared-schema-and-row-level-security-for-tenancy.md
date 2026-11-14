@@ -41,5 +41,5 @@ Bad / accepted costs:
 - The tenant must be known when the transaction starts. Tests can't wrap everything in one `@Transactional` that starts before they set the tenant.
 - Child tables (`checklist_item`, `offer`) check their work order in a subquery. That's one primary-key lookup per row, fine at this scale.
 - Platform-wide operations (support tools, cross-tenant reports) will need a separate audited path with its own role. They don't exist yet.
-- Technicians aren't tenant members. Their access to offers and work orders (step 1.6) needs an extra policy clause ("offered to me"), which is an ownership rule, not a tenant rule.
+- Technicians aren't tenant members. Their access to offers and work orders needs an extra policy clause ("offered to me"), which is an ownership rule, not a tenant rule. Added in V7 (step 1.6, ADR 0005).
 - Caches, unique constraints and indexes must include `tenant_id` from now on (see T09).

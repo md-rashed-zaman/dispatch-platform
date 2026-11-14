@@ -80,8 +80,8 @@ class SchemaConstraintsTests {
 
     private void insertOffer(UUID technicianId, String status) {
         jdbc.update("""
-                insert into offer (id, work_order_id, technician_id, status, expires_at)
-                values (?, ?, ?, ?, now() + interval '15 minutes')
-                """, UUID.randomUUID(), workOrderId, technicianId, status);
+                insert into offer (id, tenant_id, work_order_id, technician_id, status, expires_at)
+                values (?, ?, ?, ?, ?, now() + interval '15 minutes')
+                """, UUID.randomUUID(), companyId, workOrderId, technicianId, status);
     }
 }
