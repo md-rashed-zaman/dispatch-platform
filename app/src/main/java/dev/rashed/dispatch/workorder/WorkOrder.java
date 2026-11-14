@@ -6,6 +6,7 @@ import dev.rashed.dispatch.shared.Money;
 import dev.rashed.dispatch.shared.Skill;
 import dev.rashed.dispatch.shared.TimeWindow;
 import dev.rashed.dispatch.shared.Timestamps;
+import dev.rashed.dispatch.shared.Uuids;
 import jakarta.persistence.AttributeOverride;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -30,7 +31,6 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.TenantId;
-import org.hibernate.annotations.UuidGenerator;
 import org.hibernate.type.SqlTypes;
 import org.springframework.data.domain.AfterDomainEventPublication;
 import org.springframework.data.domain.DomainEvents;
@@ -49,7 +49,9 @@ public class WorkOrder {
     static final int MAX_CHECKLIST_ITEMS = 50;
 
     @Id
-    @UuidGenerator(style = UuidGenerator.Style.VERSION_7)
+    // Assigned when the object is created, not when Hibernate first saves it: events recorded before the
+    // first save (publish right after create) must already carry the id. The null @Version still tells
+    // Spring Data it's new.
     private UUID id;
 
     /**
@@ -120,6 +122,7 @@ public class WorkOrder {
             Collection<String> requiredSkills,
             TimeWindow timeWindow,
             Money budget) {
+        this.id = Uuids.v7();
         this.tenantId = Objects.requireNonNull(tenantId, "tenantId");
         this.status = WorkOrderStatus.DRAFT;
         this.createdAt = Timestamps.now();

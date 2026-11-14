@@ -1,0 +1,17 @@
+package dev.rashed.dispatch.workorder;
+
+import java.time.Instant;
+import java.util.UUID;
+import org.jspecify.annotations.Nullable;
+
+/**
+ * The public contract for {@code work-order.status-changed} version 1 on Kafka. Separate from the internal
+ * event, so internal refactoring can't break consumers: add fields freely, never rename or remove them
+ * (that's version 2, on a new topic).
+ */
+public record WorkOrderStatusChangedV1(
+        UUID workOrderId,
+        WorkOrderStatus from,
+        WorkOrderStatus to,
+        @Nullable UUID technicianId,
+        Instant occurredAt) {}
