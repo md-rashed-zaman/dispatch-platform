@@ -120,6 +120,34 @@ class FirstAcceptWinsTests {
                         .isEqualTo(offer.get("technician_id").equals(winner) ? "ACCEPTED" : "EXPIRED"));
     }
 
+    /** A double tap on a slow network: both requests arrive together, and neither may say "taken". */
+    @RepeatedTest(3)
+    void theSameTechnicianAcceptingTwiceAtOnceIsToldTheyWonBothTimes() throws Exception {
+        var entry = offerByTechnician.entrySet().iterator().next();
+        var token = TestTechnicians.token(entry.getKey());
+        var gate = new CountDownLatch(1);
+        var statuses = new java.util.concurrent.ConcurrentLinkedQueue<Integer>();
+        try (var threads = Executors.newFixedThreadPool(5)) {
+            for (var i = 0; i < 5; i++) {
+                threads.submit(() -> {
+                    gate.await();
+                    statuses.add(mvc.perform(post("/api/offers/{id}/accept", entry.getValue())
+                                    .header(HttpHeaders.AUTHORIZATION, "Bearer " + token))
+                            .andReturn()
+                            .getResponse()
+                            .getStatus());
+                    return null;
+                });
+            }
+            gate.countDown();
+        }
+
+        assertThat(statuses).hasSize(5).containsOnly(200);
+        var holder = asTenant(
+                () -> jdbc.queryForObject("select technician_id from work_order where id = ?", UUID.class, workOrder));
+        assertThat(holder).isEqualTo(entry.getKey());
+    }
+
     private static String rootMessage(Throwable e) {
         var root = e;
         while (root.getCause() != null) {

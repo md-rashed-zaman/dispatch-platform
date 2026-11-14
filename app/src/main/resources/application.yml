@@ -7,6 +7,10 @@ spring:
     # Migration V4 creates this role; the app refuses to start as a role that bypasses the policies.
     username: dispatch_app
     password: ${DB_APP_PASSWORD:dispatch_app}
+    hikari:
+      # Wait at most 3 s for a connection, not the default 30: with the database down, requests fail fast with
+      # 503 instead of piling up until every web thread is stuck (docs/failure-modes.md).
+      connection-timeout: 3000
   flyway:
     # Migrations run as the schema owner. Only Flyway uses this account, never the app's own queries.
     user: ${POSTGRES_USER:dispatch}
@@ -62,3 +66,8 @@ management:
     health:
       probes:
         enabled: true          # /actuator/health/liveness and /readiness for Kubernetes later
+      group:
+        readiness:
+          # Not ready without the database: the load balancer stops sending traffic here. Liveness leaves
+          # it out on purpose: restarting the app doesn't bring a database back.
+          include: readinessState,db

@@ -130,6 +130,12 @@ public class OfferService {
                 () -> readWrite.execute(status -> {
                     var workOrderId = offer.view().workOrderId();
                     if (!workOrders.assignIfStillRouted(workOrderId, technicianId)) {
+                        // Lost the race, maybe to this technician's own second tap that arrived at the same
+                        // moment. This statement sees the winner's committed row, so ask who has the job.
+                        var holder = workOrders.findById(workOrderId).map(WorkOrder::technicianId);
+                        if (holder.filter(technicianId::equals).isPresent()) {
+                            return offer.view().withStatus(OfferStatus.ACCEPTED);
+                        }
                         throw new WorkOrderAlreadyTakenException(workOrderId);
                     }
                     var now = Timestamps.now();
