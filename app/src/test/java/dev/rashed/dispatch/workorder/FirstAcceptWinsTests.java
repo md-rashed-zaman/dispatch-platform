@@ -3,6 +3,7 @@ package dev.rashed.dispatch.workorder;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 
+import dev.rashed.dispatch.TestTechnicians;
 import dev.rashed.dispatch.TestcontainersConfiguration;
 import dev.rashed.dispatch.tenancy.TenantContext;
 import java.util.List;

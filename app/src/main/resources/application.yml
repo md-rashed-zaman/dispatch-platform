@@ -35,6 +35,15 @@ spring:
 dispatch:
   oauth:
     issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8180/realms/dispatch}
+  storage:
+    # SeaweedFS locally; for Amazon S3 set the endpoint to https://s3.<region>.amazonaws.com, real keys, and
+    # create-bucket false (the bucket comes from infrastructure code). Nothing else changes (T15).
+    endpoint: ${S3_ENDPOINT:http://localhost:8333}
+    region: ${S3_REGION:us-east-1}
+    bucket: ${S3_BUCKET:dispatch-media}
+    access-key: ${S3_ACCESS_KEY:dispatch}
+    secret-key: ${S3_SECRET_KEY:dispatch-secret}
+    create-bucket: ${S3_CREATE_BUCKET:true}
 
 springdoc:
   default-produces-media-type: application/json   # not */*: every endpoint returns JSON

@@ -1,16 +1,15 @@
-package dev.rashed.dispatch.workorder;
+package dev.rashed.dispatch;
 
-import dev.rashed.dispatch.TestTokens;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 /** Inserts technicians straight into the shared test database (technicians belong to no tenant). */
-final class TestTechnicians {
+public final class TestTechnicians {
 
     /** A verified technician living at the given spot, travelling up to 30 km. */
-    static UUID verified(JdbcTemplate jdbc, double latitude, double longitude, String... skills) {
+    public static UUID verified(JdbcTemplate jdbc, double latitude, double longitude, String... skills) {
         var id = UUID.randomUUID();
         jdbc.update(
                 """
@@ -27,13 +26,13 @@ final class TestTechnicians {
     }
 
     /** An access token like Keycloak issues to the technician's user account. */
-    static String token(UUID technicianId) {
+    public static String token(UUID technicianId) {
         return TestTokens.token(
                 c -> c.claim("roles", List.of("TECHNICIAN")).claim("technician_id", technicianId.toString()));
     }
 
     /** A skill code no other test uses, so technicians left in the shared database by other tests never match. */
-    static String uniqueSkill() {
+    public static String uniqueSkill() {
         return "test-" + Long.toHexString(ThreadLocalRandom.current().nextLong() >>> 1);
     }
 

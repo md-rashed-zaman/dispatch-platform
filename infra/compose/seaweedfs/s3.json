@@ -1,0 +1,9 @@
+{
+  "identities": [
+    {
+      "name": "dispatch-app",
+      "credentials": [{"accessKey": "dispatch", "secretKey": "dispatch-secret"}],
+      "actions": ["Admin", "Read", "Write", "List", "Tagging"]
+    }
+  ]
+}

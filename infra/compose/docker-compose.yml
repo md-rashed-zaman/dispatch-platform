@@ -1,4 +1,4 @@
-# Local stack. Services are added as steps need them (Keycloak at 1.2, storage at 1.7, Kafka and Redis in Phase 2).
+# Local stack. Services are added as steps need them (Keycloak at 1.2, SeaweedFS at 1.7, Kafka and Redis in Phase 2).
 # Memory limits keep the stack usable on an 8 GB laptop.
 name: dispatch
 
@@ -50,5 +50,25 @@ services:
       timeout: 5s
       retries: 30
 
+  # Object storage with the S3 API, for work order photos (T15). Same SDK calls as Amazon S3; only the
+  # endpoint differs. Credentials come from seaweedfs/s3.json (local only). S3 API: http://localhost:8333
+  seaweedfs:
+    image: chrislusf/seaweedfs:4.51
+    command: ["server", "-dir=/data", "-s3", "-s3.port=8333", "-s3.config=/etc/seaweedfs/s3.json"]
+    ports:
+      - "8333:8333"
+    volumes:
+      - ./seaweedfs:/etc/seaweedfs:ro
+      - seaweedfs-data:/data
+    mem_limit: 256m
+    healthcheck:
+      # Any HTTP answer (anonymous requests get 403) means the S3 gateway is up. The image has wget, not curl;
+      # 127.0.0.1 because localhost resolves to IPv6 in the container and the gateway listens on IPv4.
+      test: ["CMD-SHELL", "wget -S -O /dev/null http://127.0.0.1:8333 2>&1 | grep -q 'HTTP/'"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
 volumes:
   postgres-data:
+  seaweedfs-data:

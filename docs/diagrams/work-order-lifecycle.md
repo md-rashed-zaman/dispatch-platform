@@ -28,8 +28,8 @@ stateDiagram-v2
 | route | PUBLISHED | ROUTED | Publishing, when technicians in range have the skills: offers go to the nearest 10 | (part of publish) |
 | offers expired | ROUTED | PUBLISHED | Scheduled job (step 2.5) | - |
 | assign | ROUTED | ASSIGNED | Technician accepts an offer; the first one wins ([ADR 0005](../adr/0005-conditional-update-for-job-acceptance.md)) | `POST /api/offers/{id}/accept` |
-| start | ASSIGNED | IN_PROGRESS | Technician (step 1.7) | - |
-| submit | IN_PROGRESS | SUBMITTED | Technician (step 1.7) | - |
+| start | ASSIGNED | IN_PROGRESS | The assigned technician | `POST /api/work-orders/{id}/start` |
+| submit | IN_PROGRESS | SUBMITTED | The assigned technician | `POST /api/work-orders/{id}/submit` |
 | approve | SUBMITTED | APPROVED | Dispatcher, client admin | `POST /api/work-orders/{id}/approve` |
 | reject | SUBMITTED | IN_PROGRESS | Dispatcher, client admin | `POST /api/work-orders/{id}/reject` |
 | mark paid | APPROVED | PAID | Payment (Phase 4) | - |
