@@ -1,5 +1,6 @@
 package dev.rashed.dispatch.shared;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.Embeddable;
 import java.util.Objects;
 
@@ -21,6 +22,7 @@ public record Money(long minor, String currency) {
         return new Money(poisha, "BDT");
     }
 
+    @JsonIgnore // a question about the value, not part of it: keeps "positive" out of API responses
     public boolean isPositive() {
         return minor > 0;
     }

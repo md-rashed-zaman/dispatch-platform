@@ -54,6 +54,7 @@ erDiagram
   }
   offer {
     uuid id PK
+    uuid tenant_id FK "always the work order's tenant"
     uuid work_order_id FK
     uuid technician_id FK
     text status
@@ -84,5 +85,7 @@ Aggregates point at each other with ID columns, never with Java object reference
 | Money is positive and in minor units | `budget_minor BIGINT CHECK (> 0)` |
 | Time window ends after it starts | `work_order_window_valid` |
 | A tenant sees and writes only its own work orders, checklists and offers | row-level security policies `tenant_isolation` (V4, [ADR 0003](../adr/0003-shared-schema-and-row-level-security-for-tenancy.md)) |
+| A technician reads only their own offers and the work orders offered or assigned to them | row-level security policies `technician_reads_own_offers`, `technician_reads_offered_work` (V7, [ADR 0005](../adr/0005-conditional-update-for-job-acceptance.md)) |
+| An offer's tenant is its work order's tenant | composite foreign key `offer_work_order_same_tenant` (V7) |
 
 `company` and `technician` are not tenant-owned: companies are the tenant list, and technicians work for many companies.

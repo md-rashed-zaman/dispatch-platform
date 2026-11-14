@@ -4,8 +4,12 @@ import dev.rashed.dispatch.shared.Cursor;
 import dev.rashed.dispatch.shared.CursorPage;
 import dev.rashed.dispatch.shared.InvalidCursorException;
 import dev.rashed.dispatch.shared.NotFoundException;
+import dev.rashed.dispatch.shared.Skill;
 import dev.rashed.dispatch.shared.StaleVersionException;
+import dev.rashed.dispatch.shared.Timestamps;
+import dev.rashed.dispatch.technician.TechnicianSearch;
 import dev.rashed.dispatch.tenancy.TenantContext;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.format.DateTimeParseException;
 import java.util.List;
@@ -28,11 +32,18 @@ import org.springframework.transaction.annotation.Transactional;
 public class WorkOrderService {
 
     static final String COMPANY_STAFF = "hasAnyRole('CLIENT_ADMIN', 'DISPATCHER')";
+    static final int ROUTING_RADIUS_KM = 20;
+    static final int OFFERS_PER_WORK_ORDER = 10;
+    static final Duration OFFER_LIFETIME = Duration.ofMinutes(30);
 
     private final WorkOrderRepository workOrders;
+    private final OfferRepository offers;
+    private final TechnicianSearch technicians;
 
-    WorkOrderService(WorkOrderRepository workOrders) {
+    WorkOrderService(WorkOrderRepository workOrders, OfferRepository offers, TechnicianSearch technicians) {
         this.workOrders = workOrders;
+        this.offers = offers;
+        this.technicians = technicians;
     }
 
     @Transactional
@@ -94,9 +105,16 @@ public class WorkOrderService {
         });
     }
 
+    /**
+     * Publishes the draft and offers it to the nearest technicians who have every required skill. With
+     * nobody in range it stays PUBLISHED.
+     */
     @Transactional
     public WorkOrderView publish(UUID id) {
-        return change(id, WorkOrder::publish);
+        return change(id, workOrder -> {
+            workOrder.publish();
+            routeToNearbyTechnicians(workOrder);
+        });
     }
 
     @Transactional
@@ -112,6 +130,21 @@ public class WorkOrderService {
     @Transactional
     public WorkOrderView reject(UUID id, String reason) {
         return change(id, workOrder -> workOrder.reject(reason));
+    }
+
+    // shortcut: routing runs inside publish, so a slow search slows publishing; Phase 2 moves it to an
+    // event listener. Widening the radius when nobody is in range comes with the SLA policy (step 2.5).
+    private void routeToNearbyTechnicians(WorkOrder workOrder) {
+        var skills = workOrder.requiredSkills().stream().map(Skill::code).toList();
+        var candidates = technicians
+                .nearby(workOrder.site(), ROUTING_RADIUS_KM, skills, OFFERS_PER_WORK_ORDER, null)
+                .items();
+        if (candidates.isEmpty()) {
+            return;
+        }
+        workOrder.route();
+        var expiresAt = Timestamps.now().plus(OFFER_LIFETIME);
+        candidates.forEach(t -> offers.save(Offer.create(workOrder.id(), t.id(), expiresAt)));
     }
 
     // save, not just dirty checking: Spring Data publishes the work order's events on save. The flush

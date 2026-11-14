@@ -126,6 +126,43 @@ class TenantIsolationTests {
                         "assigned tenant id differs from current tenant id"); // caught before any SQL runs
     }
 
+    /** Technicians have no tenant. The database shows them their own offers and the work behind them, only. */
+    @Test
+    void databaseShowsATechnicianOnlyTheirOffersAndTheWorkOfferedToThem() {
+        var rahim = TestTechnicians.verified(jdbc, 23.79, 90.41, "networking");
+        var karim = TestTechnicians.verified(jdbc, 23.79, 90.41, "networking");
+        var offerToRahim = offer(tenantA, workOrderA, rahim);
+        offer(tenantB, workOrderB, karim);
+
+        var offers = asTechnician(rahim, () -> jdbc.queryForList("select id from offer", UUID.class));
+        var workOrdersSeen = asTechnician(
+                rahim,
+                () -> jdbc.queryForList(
+                        "select id from work_order where id in (?, ?)", UUID.class, workOrderA, workOrderB));
+        var updated = asTechnician(
+                rahim, () -> jdbc.update("update work_order set title = 'Hijacked' where id = ?", workOrderA));
+
+        assertThat(offers).containsExactly(offerToRahim);
+        assertThat(workOrdersSeen).containsExactly(workOrderA);
+        assertThat(updated).isZero(); // reading isn't writing: accepting runs as the tenant (ADR 0005)
+    }
+
+    private UUID offer(UUID tenant, UUID workOrder, UUID technician) {
+        var id = UUID.randomUUID();
+        asTenant(tenant, () -> jdbc.update("""
+                insert into offer (id, tenant_id, work_order_id, technician_id, status, expires_at)
+                values (?, ?, ?, ?, 'OFFERED', now() + interval '30 minutes')
+                """, id, tenant, workOrder, technician));
+        return id;
+    }
+
+    private <T> T asTechnician(UUID technician, Supplier<T> work) {
+        return transaction.execute(status -> {
+            jdbc.queryForObject("select set_config('app.technician_id', ?, true)", String.class, technician.toString());
+            return work.get();
+        });
+    }
+
     private UUID createWorkOrder(UUID tenant, String title) {
         return asTenant(tenant, () -> {
             var workOrder = WorkOrders.draft(tenant, title);

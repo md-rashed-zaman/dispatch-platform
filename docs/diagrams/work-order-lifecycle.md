@@ -24,11 +24,11 @@ stateDiagram-v2
 
 | Command | From | To | Who triggers it | API |
 |---|---|---|---|---|
-| publish | DRAFT | PUBLISHED | Dispatcher, client admin | `POST /api/work-orders/{id}/publish` |
-| route | PUBLISHED | ROUTED | Matching (step 1.6) | - |
-| offers expired | ROUTED | PUBLISHED | Scheduled job (step 1.6) | - |
-| assign | ROUTED | ASSIGNED | Technician accepts an offer (step 1.6) | - |
-| start | ASSIGNED | IN_PROGRESS | Technician (step 1.6) | - |
+| publish | DRAFT | PUBLISHED | Dispatcher, client admin | `POST /api/work-orders/{id}/publish` (then routes, see next row) |
+| route | PUBLISHED | ROUTED | Publishing, when technicians in range have the skills: offers go to the nearest 10 | (part of publish) |
+| offers expired | ROUTED | PUBLISHED | Scheduled job (step 2.5) | - |
+| assign | ROUTED | ASSIGNED | Technician accepts an offer; the first one wins ([ADR 0005](../adr/0005-conditional-update-for-job-acceptance.md)) | `POST /api/offers/{id}/accept` |
+| start | ASSIGNED | IN_PROGRESS | Technician (step 1.7) | - |
 | submit | IN_PROGRESS | SUBMITTED | Technician (step 1.7) | - |
 | approve | SUBMITTED | APPROVED | Dispatcher, client admin | `POST /api/work-orders/{id}/approve` |
 | reject | SUBMITTED | IN_PROGRESS | Dispatcher, client admin | `POST /api/work-orders/{id}/reject` |
@@ -82,3 +82,20 @@ Edits (`PATCH /api/work-orders/{id}`) need `If-Match` with the ETag from your la
 - Missing `If-Match`: **428**.
 - Someone saved in between: **412**. Reload and edit again.
 - The work order isn't a draft any more: **409**.
+
+## Two technicians accept at once
+
+```mermaid
+sequenceDiagram
+  participant R as Rahim
+  participant K as Karim
+  participant DB as PostgreSQL
+  R->>DB: UPDATE work_order SET status=ASSIGNED, technician=Rahim WHERE id=7 AND status=ROUTED
+  Note over DB: row 7 locked by Rahim's transaction
+  K->>DB: same UPDATE with technician=Karim
+  Note over K,DB: waits for the row lock
+  R->>DB: offer ACCEPTED, other offers EXPIRED, COMMIT
+  DB-->>R: 1 row: 200, the job is Rahim's
+  Note over DB: Karim's UPDATE re-checks WHERE on the committed row: status is ASSIGNED
+  DB-->>K: 0 rows: 409 already-taken
+```

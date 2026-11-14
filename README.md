@@ -54,7 +54,7 @@ Test users (password `password` for all; local realm only, defined in `infra/com
 | `dispatcher.meghna` | DISPATCHER | Meghna Bank |
 | `admin.meghna` | CLIENT_ADMIN | Meghna Bank |
 | `dispatcher.shwapno` | DISPATCHER | Shwapno Retail |
-| `tech.rahim` | TECHNICIAN | none (marketplace-wide) |
+| `tech.rahim` | TECHNICIAN | none (marketplace-wide); lives in Gulshan, so work orders published nearby are offered to this account |
 | `ops.admin` | PLATFORM_ADMIN | none |
 
 Get a token from the command line (the `dispatch-dev-cli` client allows password login for local testing only):

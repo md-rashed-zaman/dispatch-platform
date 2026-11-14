@@ -199,7 +199,7 @@ public class WorkOrder {
         apply(Transition.PUBLISH);
     }
 
-    /** Offers were sent to candidate technicians (matching, step 1.6). */
+    /** Offers were sent to the nearest matching technicians (on publish, see WorkOrderService). */
     public void route() {
         apply(Transition.ROUTE);
     }
@@ -209,7 +209,10 @@ public class WorkOrder {
         apply(Transition.OFFERS_EXPIRED);
     }
 
-    /** A technician accepted an offer (step 1.6 makes this safe when several accept at once). */
+    /**
+     * The same transition in memory. Accepting an offer doesn't use it: when many technicians accept at
+     * once, {@link WorkOrderRepository#assignIfStillRouted} applies it in one atomic UPDATE (ADR 0005).
+     */
     public void assign(UUID technicianId) {
         Objects.requireNonNull(technicianId, "technicianId");
         requireAllowed(Transition.ASSIGN);

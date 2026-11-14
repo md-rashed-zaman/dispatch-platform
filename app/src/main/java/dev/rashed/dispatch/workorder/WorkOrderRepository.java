@@ -1,10 +1,12 @@
 package dev.rashed.dispatch.workorder;
 
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.data.domain.Limit;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 
 interface WorkOrderRepository extends JpaRepository<WorkOrder, UUID> {
@@ -33,4 +35,22 @@ interface WorkOrderRepository extends JpaRepository<WorkOrder, UUID> {
             select w from WorkOrder w where w.status = :status and (w.createdAt, w.id) < (:createdAt, :id)
             order by w.createdAt desc, w.id desc""")
     List<WorkOrder> findPageByStatusAfter(WorkOrderStatus status, Instant createdAt, UUID id, Limit limit);
+
+    /**
+     * Assigns the work order only if it's still open for assignment, deciding the race between technicians
+     * who accept at the same moment inside Postgres (ADR 0005). A second UPDATE on the same row waits for
+     * the first to commit, then re-checks the WHERE clause against the committed row: the status has moved
+     * on, so it changes nothing. The version bump makes a dispatcher's stale edit fail with 412 afterwards.
+     *
+     * @return true for the one caller that got the work order
+     */
+    default boolean assignIfStillRouted(UUID id, UUID technicianId) {
+        return applyAssignment(id, technicianId, Transition.ASSIGN.to, Transition.ASSIGN.from) == 1;
+    }
+
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("""
+            update WorkOrder w set w.status = :to, w.technicianId = :technicianId, w.version = w.version + 1
+            where w.id = :id and w.status in :from""")
+    int applyAssignment(UUID id, UUID technicianId, WorkOrderStatus to, Collection<WorkOrderStatus> from);
 }

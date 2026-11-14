@@ -1,5 +1,6 @@
 package dev.rashed.dispatch.tenancy;
 
+import dev.rashed.dispatch.identity.CurrentUser;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityManagerFactory;
 import java.sql.SQLException;
@@ -27,7 +28,7 @@ import org.springframework.transaction.TransactionDefinition;
  *       fills that column on insert.
  *   <li>Postgres row-level security (migration V4) filters the same rows inside the database, so native SQL
  *       or a forgotten annotation still can't cross tenants. Every transaction starts by telling Postgres
- *       the tenant with a transaction-local setting, which disappears at commit and so can't leak to the
+ *       the tenant (and, for technicians, the technician) with transaction-local settings, which disappear at commit and so can't leak to the
  *       next request that borrows the same pooled connection.
  * </ol>
  *
@@ -84,16 +85,24 @@ class TenancyConfig {
         public Object beginTransaction(EntityManager entityManager, TransactionDefinition definition)
                 throws SQLException {
             var transactionData = super.beginTransaction(entityManager, definition);
-            TenantContext.current()
-                    .ifPresent(tenantId -> entityManager.unwrap(Session.class).doWork(connection -> {
-                        // true = local to this transaction (SET LOCAL), never the whole pooled connection
-                        try (var statement =
-                                connection.prepareStatement("select set_config('app.tenant_id', ?, true)")) {
-                            statement.setString(1, tenantId.toString());
-                            statement.execute();
-                        }
-                    }));
+            var session = entityManager.unwrap(Session.class);
+            TenantContext.current().ifPresent(tenantId -> setLocal(session, "app.tenant_id", tenantId));
+            // Technicians belong to no tenant; row-level security knows them by their technician id (V7).
+            CurrentUser.current()
+                    .map(CurrentUser::technicianId)
+                    .ifPresent(technicianId -> setLocal(session, "app.technician_id", technicianId));
             return transactionData;
+        }
+
+        private static void setLocal(Session session, String name, UUID value) {
+            session.doWork(connection -> {
+                // true = local to this transaction (SET LOCAL), never the whole pooled connection
+                try (var statement = connection.prepareStatement("select set_config(?, ?, true)")) {
+                    statement.setString(1, name);
+                    statement.setString(2, value.toString());
+                    statement.execute();
+                }
+            });
         }
     }
 }
