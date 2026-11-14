@@ -146,6 +146,7 @@ public class OfferService {
                     events.publishEvent(new WorkOrderStatusChanged(
                             workOrderId,
                             offer.tenantId(),
+                            offer.view().title(),
                             WorkOrderStatus.ROUTED, // the only status Transition.ASSIGN starts from
                             Transition.ASSIGN.to,
                             technicianId,

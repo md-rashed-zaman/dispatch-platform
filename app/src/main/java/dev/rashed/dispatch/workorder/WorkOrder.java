@@ -277,7 +277,7 @@ public class WorkOrder {
     /** Checks the table (again, for methods that checked it before their guards) and moves. */
     private void apply(Transition transition) {
         requireAllowed(transition);
-        events.add(new WorkOrderStatusChanged(id, tenantId, status, transition.to, technicianId, Instant.now()));
+        events.add(new WorkOrderStatusChanged(id, tenantId, title, status, transition.to, technicianId, Instant.now()));
         this.status = transition.to;
     }
 

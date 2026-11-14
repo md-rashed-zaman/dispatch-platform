@@ -1,11 +1,9 @@
 package dev.rashed.dispatch.notification;
 
-import dev.rashed.dispatch.outbox.OutboxEnvelope;
 import dev.rashed.dispatch.outbox.Topics;
-import dev.rashed.dispatch.workorder.WorkOrderStatusChangedV1;
+import dev.rashed.dispatch.tenancy.TenantDirectory;
 import java.util.UUID;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.simple.JdbcClient;
@@ -14,15 +12,15 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
-import tools.jackson.databind.json.JsonMapper;
 
 /**
- * Tells the company when its work order is taken and when the work is ready for approval. Reads the work
+ * Emails the company when its work order is taken and when the work is ready for approval. Reads the work
  * order events from Kafka, like a separate notification service would: it shares no transaction or memory
  * with the code that changed the work order.
  *
  * <p>Delivery is at least once, so it deduplicates by event id. Failures are retried with backoff; events
- * that can never work go to the dead-letter topic ({@link NotificationKafkaConfig}).
+ * that can never work go to the dead-letter topic ({@link NotificationKafkaConfig}). The email itself is
+ * queued, not sent: {@link EmailSender} delivers it, so a mail server outage never blocks this consumer.
  */
 @Component
 class CompanyNotifications {
@@ -32,15 +30,24 @@ class CompanyNotifications {
     private static final Logger log = LoggerFactory.getLogger(CompanyNotifications.class);
 
     private final JdbcClient jdbc;
-    private final JsonMapper json;
-    private final Notifier notifier;
+    private final WorkOrderEventReader events;
+    private final TenantDirectory tenants;
+    private final EmailTemplates templates;
+    private final EmailOutbox emails;
     private final TransactionTemplate transaction;
 
     CompanyNotifications(
-            JdbcClient jdbc, JsonMapper json, Notifier notifier, PlatformTransactionManager transactionManager) {
+            JdbcClient jdbc,
+            WorkOrderEventReader events,
+            TenantDirectory tenants,
+            EmailTemplates templates,
+            EmailOutbox emails,
+            PlatformTransactionManager transactionManager) {
         this.jdbc = jdbc;
-        this.json = json;
-        this.notifier = notifier;
+        this.events = events;
+        this.tenants = tenants;
+        this.templates = templates;
+        this.emails = emails;
         this.transaction = new TransactionTemplate(transactionManager);
     }
 
@@ -52,63 +59,27 @@ class CompanyNotifications {
             topics = Topics.WORK_ORDER_EVENTS,
             autoStartup = "${dispatch.notification.consumer-enabled:true}")
     void on(ConsumerRecord<String, String> record) {
-        var event = parse(record.value());
+        var event = events.read(record.value());
         if (event == null) {
             return; // an event type this consumer doesn't care about
         }
-        var message = messageFor(event.payload());
-        if (message == null) {
-            return;
+        var contact = tenants.notificationContact(event.tenantId()).orElse(null);
+        if (contact == null) {
+            return; // the company hasn't given a notification address
+        }
+        var email = templates.forCompany(event.change(), contact.companyName(), contact.email());
+        if (email == null) {
+            return; // a change the company isn't told about
         }
         transaction.executeWithoutResult(status -> {
             if (!firstDelivery(event.eventId())) {
                 log.info("Skipped event {}: already processed", event.eventId());
                 return;
             }
-            // If this throws, the processed_event row rolls back too: the retry isn't taken for a duplicate.
-            // shortcut: an email sent just before a crash is sent again; real email gets eventId as the
-            // provider's idempotency key.
-            notifier.notifyCompany(event.tenantId(), message);
+            // Same transaction as the processed_event row: both are saved, or neither is. The email has the
+            // event id as its message id, so even a second queue attempt can't make a second email.
+            emails.queue(event.eventId(), email);
         });
-    }
-
-    private @Nullable StatusChanged parse(@Nullable String value) {
-        if (value == null) {
-            throw new MalformedEventException("Empty message");
-        }
-        OutboxEnvelope envelope;
-        try {
-            envelope = json.readValue(value, OutboxEnvelope.class);
-        } catch (RuntimeException e) {
-            throw new MalformedEventException("Not an event envelope", e);
-        }
-        if (envelope == null || envelope.eventId() == null || envelope.type() == null || envelope.tenantId() == null) {
-            throw new MalformedEventException("Envelope without eventId, type or tenantId");
-        }
-        if (!WorkOrderStatusChangedV1.TYPE.equals(envelope.type())) {
-            return null; // new event types on this topic must not break old consumers
-        }
-        if (envelope.version() != WorkOrderStatusChangedV1.VERSION) {
-            throw new MalformedEventException("Unknown version " + envelope.version() + " of " + envelope.type());
-        }
-        WorkOrderStatusChangedV1 payload;
-        try {
-            payload = json.convertValue(envelope.payload(), WorkOrderStatusChangedV1.class);
-        } catch (RuntimeException e) {
-            throw new MalformedEventException("Unreadable " + envelope.type() + " payload", e);
-        }
-        if (payload == null || payload.workOrderId() == null || payload.to() == null) {
-            throw new MalformedEventException("Payload without workOrderId or status");
-        }
-        return new StatusChanged(envelope.eventId(), envelope.tenantId(), payload);
-    }
-
-    private static @Nullable String messageFor(WorkOrderStatusChangedV1 change) {
-        return switch (change.to()) {
-            case ASSIGNED -> "A technician accepted work order " + change.workOrderId();
-            case SUBMITTED -> "Work order " + change.workOrderId() + " is done and waiting for your approval";
-            default -> null;
-        };
     }
 
     private boolean firstDelivery(UUID eventId) {
@@ -129,6 +100,4 @@ class CompanyNotifications {
                 .update();
         log.info("Deleted {} processed-event entries older than two weeks", deleted);
     }
-
-    private record StatusChanged(UUID eventId, UUID tenantId, WorkOrderStatusChangedV1 payload) {}
 }

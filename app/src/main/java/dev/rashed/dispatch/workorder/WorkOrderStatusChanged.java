@@ -11,6 +11,7 @@ import java.util.UUID;
 public record WorkOrderStatusChanged(
         UUID workOrderId,
         UUID tenantId,
+        String title,
         WorkOrderStatus from,
         WorkOrderStatus to,
         UUID technicianId,
