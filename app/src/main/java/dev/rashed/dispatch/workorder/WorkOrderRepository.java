@@ -1,5 +1,6 @@
 package dev.rashed.dispatch.workorder;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.data.domain.Limit;
@@ -15,9 +16,21 @@ interface WorkOrderRepository extends JpaRepository<WorkOrder, UUID> {
     /** Checklists load lazily on first access, in batches (default_batch_fetch_size), not one query each. */
     List<WorkOrder> findByTenantIdOrderByCreatedAt(UUID tenantId);
 
-    // Newest first. Tenant filtering is automatic (@TenantId and row-level security).
-    // shortcut: a plain limit, no paging past the first page; cursor pagination comes with step 1.5 (T13).
-    List<WorkOrder> findAllByOrderByCreatedAtDesc(Limit limit);
+    // Lists: newest first, id breaking ties, one page at a time (keyset pagination, T13). Tenant filtering is
+    // automatic (@TenantId and row-level security). The row comparison "(created_at, id) < (?, ?)" lets
+    // Postgres start reading the index right where the previous page ended, so page 1,000 costs the same
+    // as page 1. (Spring Data's keyset scrolling writes it as "a < ? or (a = ? and b < ?)", which the index
+    // can't seek to.)
+    List<WorkOrder> findAllByOrderByCreatedAtDescIdDesc(Limit limit);
 
-    List<WorkOrder> findByStatusOrderByCreatedAtDesc(WorkOrderStatus status, Limit limit);
+    List<WorkOrder> findByStatusOrderByCreatedAtDescIdDesc(WorkOrderStatus status, Limit limit);
+
+    @Query(
+            "select w from WorkOrder w where (w.createdAt, w.id) < (:createdAt, :id) order by w.createdAt desc, w.id desc")
+    List<WorkOrder> findPageAfter(Instant createdAt, UUID id, Limit limit);
+
+    @Query("""
+            select w from WorkOrder w where w.status = :status and (w.createdAt, w.id) < (:createdAt, :id)
+            order by w.createdAt desc, w.id desc""")
+    List<WorkOrder> findPageByStatusAfter(WorkOrderStatus status, Instant createdAt, UUID id, Limit limit);
 }

@@ -1,5 +1,6 @@
 package dev.rashed.dispatch.workorder;
 
+import dev.rashed.dispatch.shared.CursorPage;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -7,7 +8,6 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import java.net.URI;
-import java.util.List;
 import java.util.UUID;
 import java.util.regex.Pattern;
 import org.springframework.http.HttpHeaders;
@@ -51,12 +51,18 @@ class WorkOrderController {
                 .body(created);
     }
 
-    @Operation(summary = "Your company's work orders, newest first")
+    @Operation(
+            summary = "Your company's work orders, newest first",
+            description = "Pass \"next\" from the response as \"after\" to get the next page.")
     @GetMapping
-    List<WorkOrderSummary> list(
+    CursorPage<WorkOrderSummary> list(
             @RequestParam(required = false) WorkOrderStatus status,
-            @RequestParam(defaultValue = "50") @Min(1) @Max(100) int limit) {
-        return workOrders.list(status, limit);
+            @Parameter(description = "Page size, 1 to 100") @RequestParam(defaultValue = "50") @Min(1) @Max(100)
+                    int limit,
+            @Parameter(description = "The \"next\" value from the previous page; leave out for the first page")
+                    @RequestParam(required = false)
+                    String after) {
+        return workOrders.list(status, limit, after);
     }
 
     // Another tenant's work order is a 404, not a 403: a 403 would confirm that the id exists.
