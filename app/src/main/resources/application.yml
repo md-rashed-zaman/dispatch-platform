@@ -30,6 +30,14 @@ spring:
       mail.smtp.connectiontimeout: 3000
       mail.smtp.timeout: 5000
       mail.smtp.writetimeout: 5000
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      timeout: 300ms                  # a cache read waits at most this long for Redis before going to the database
+      connect-timeout: 300ms
+  cache:
+    cache-names: technician-profiles  # created at startup, so their hit/miss metrics exist from the start
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
     producer:
@@ -100,6 +108,12 @@ dispatch:
       open-for: PT30S                 # how long the breaker stays open before one trial call
   live:
     connection-timeout: PT30M         # dashboards reconnect after this
+  cache:
+    technician-profile-ttl: PT10M
+  rate-limit:
+    enabled: ${RATE_LIMIT_ENABLED:true}
+    capacity: 100                     # a burst of up to 100 requests per company
+    refill-per-minute: 100            # then 100 a minute, added steadily
   sla:
     widen-after: PT2H                 # nobody took it: offer it farther away
     escalate-after: PT6H              # still nobody: tell the company
@@ -119,6 +133,10 @@ springdoc:
 
 management:
   health:
+    redis:
+      # Off for the same reason: Redis only speeds things up (cache) and protects (rate limit); without it the
+      # app still serves every request.
+      enabled: false
     mail:
       # Off on purpose: emails are queued and sent later, so a mail server outage must not mark the app
       # unhealthy (a load balancer would take it out of service for something users don't notice).
@@ -126,7 +144,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,modulith
+        include: health,info,modulith,metrics   # all but health need a token
   endpoint:
     health:
       probes:

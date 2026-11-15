@@ -19,6 +19,7 @@
         <springdoc.version>3.2.0</springdoc.version>
         <resilience4j.version>2.4.0</resilience4j.version>
         <shedlock.version>7.11.0</shedlock.version>
+        <bucket4j.version>8.22.0</bucket4j.version>
         <spotless.version>3.11.0</spotless.version>
         <palantir-java-format.version>2.103.0</palantir-java-format.version>
         <jacoco.version>0.8.16</jacoco.version>
@@ -93,6 +94,20 @@
             <groupId>net.javacrumbs.shedlock</groupId>
             <artifactId>shedlock-provider-jdbc-template</artifactId>
             <version>${shedlock.version}</version>
+        </dependency>
+        <!-- Redis: a shared cache, and rate limits shared by every instance (T23, T24). -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-redis</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-cache</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.bucket4j</groupId>
+            <artifactId>bucket4j_jdk17-lettuce</artifactId>
+            <version>${bucket4j.version}</version>
         </dependency>
         <!-- S3 API for photos: SeaweedFS locally, Amazon S3 in the cloud, same code (T15). -->
         <dependency>

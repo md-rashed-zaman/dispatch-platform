@@ -19,6 +19,7 @@ Built as a portfolio project to show production backend engineering: correctness
 | **Consumers that survive real delivery** | The notification consumer deduplicates by event id in the same transaction as its work, retries temporary failures with exponential backoff, and moves poison messages to a dead-letter topic without stopping. Replaying the whole topic notified nobody twice. | `CompanyNotificationsTests`, [failure modes](docs/failure-modes.md) |
 | **Live dashboard, email that can wait** | Dispatchers get every change of their company's work orders over server-sent events within a second; every app instance reads every event, so it works behind a load balancer. Emails are queued, sent through a circuit breaker, and retried for hours: with the mail server down, the API doesn't slow down and no email is lost. | [ADR 0007](docs/adr/0007-sse-over-websocket.md), `LiveUpdatesTests`, `EmailSenderTests` |
 | **Jobs that run once on many instances** | Work orders nobody takes are offered farther away after 2 hours and escalated to the company after 6. ShedLock runs each round on one instance; every step is also guarded by state and version, so even two runs at once change each work order once. Two instances and a load balancer locally: `--profile cluster`. | `SlaPolicyTests`, [failure modes](docs/failure-modes.md) |
+| **Cache and rate limits that can't take the API down** | Technician profiles are cached in Redis (cache-aside, jittered TTL, single-flight) and evicted after an update commits, so the next read is fresh. Each company gets a token bucket shared by every instance: a burst of 200 gets 100 through, then 429 with `Retry-After`. With Redis down, both step aside: reads come from the database and requests aren't limited. | `TechnicianProfileCacheTests`, `RateLimitTests` |
 | **Fails politely** | Database or storage down: 503 with `Retry-After` within 3 s, readiness `DOWN`, automatic recovery. Every error is RFC 9457 Problem Details. | [docs/failure-modes.md](docs/failure-modes.md) |
 
 ## Architecture
@@ -85,7 +86,7 @@ sequenceDiagram
   API-->>T: winner 200, everyone else 409 already-taken
 ```
 
-Stack: Spring Boot 4.1, Spring Modulith 2.1, Hibernate 7, Flyway, PostgreSQL 17 + PostGIS + pgvector, Keycloak 26, Kafka 4 (KRaft) with Spring for Apache Kafka, Resilience4j, Thymeleaf email templates, Mailpit, AWS SDK v2 against SeaweedFS, Testcontainers, JUnit 5, Spotless, JaCoCo, GitHub Actions.
+Stack: Spring Boot 4.1, Spring Modulith 2.1, Hibernate 7, Flyway, PostgreSQL 17 + PostGIS + pgvector, Keycloak 26, Kafka 4 (KRaft) with Spring for Apache Kafka, Resilience4j, Redis (Spring Cache, Bucket4j), Thymeleaf email templates, Mailpit, AWS SDK v2 against SeaweedFS, Testcontainers, JUnit 5, Spotless, JaCoCo, GitHub Actions.
 
 ## Documentation
 
@@ -101,7 +102,7 @@ Requirements: Docker, JDK 21+.
 
 ```bash
 cp .env.example .env
-docker compose -f infra/compose/docker-compose.yml up -d --wait postgres keycloak seaweedfs kafka mailpit
+docker compose -f infra/compose/docker-compose.yml up -d --wait postgres keycloak seaweedfs kafka mailpit redis
 cd app && ./mvnw spring-boot:run
 ```
 
