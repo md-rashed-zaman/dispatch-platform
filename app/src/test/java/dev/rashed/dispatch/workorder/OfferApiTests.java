@@ -15,6 +15,7 @@ import dev.rashed.dispatch.TestTechnicians;
 import dev.rashed.dispatch.TestTokens;
 import dev.rashed.dispatch.TestcontainersConfiguration;
 import dev.rashed.dispatch.tenancy.TenantContext;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import java.util.List;
 import java.util.UUID;
@@ -41,6 +42,9 @@ class OfferApiTests {
     // Gulshan 1, Dhaka
     static final double SITE_LATITUDE = 23.7925;
     static final double SITE_LONGITUDE = 90.4125;
+
+    @Autowired
+    MeterRegistry meters;
 
     @Autowired
     MockMvc mvc;
@@ -104,6 +108,7 @@ class OfferApiTests {
     void acceptingAssignsTheJobAndClosesEveryOtherOffer() throws Exception {
         var workOrder = publishedWorkOrder();
         var eTagBefore = eTagOf(workOrder);
+        var assignedBefore = timeToAssignCount();
 
         call(post("/api/offers/{id}/accept", offerOf(rahim)), TestTechnicians.token(rahim))
                 .andExpect(status().isOk())
@@ -117,6 +122,7 @@ class OfferApiTests {
         call(get("/api/me/offers"), TestTechnicians.token(karim))
                 .andExpect(jsonPath("$.items").value(empty()));
         assertThat(offerStatuses(workOrder)).containsExactlyInAnyOrder("ACCEPTED", "EXPIRED");
+        assertThat(timeToAssignCount()).isEqualTo(assignedBefore + 1); // the time-to-assign SLO's data
     }
 
     @Test
@@ -126,9 +132,12 @@ class OfferApiTests {
         call(post("/api/offers/{id}/accept", offerOf(rahim)), TestTechnicians.token(rahim))
                 .andExpect(status().isOk());
 
+        var conflictsBefore = meters.counter("dispatch.offers.accept_conflicts").count();
+
         call(post("/api/offers/{id}/accept", karimsOffer), TestTechnicians.token(karim))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.type").value("urn:dispatch:problem:already-taken"));
+        assertThat(meters.counter("dispatch.offers.accept_conflicts").count()).isEqualTo(conflictsBefore + 1);
     }
 
     /** A phone on a bad connection retries; the winner must not be told they lost. */
@@ -159,6 +168,7 @@ class OfferApiTests {
         var workOrder = publishedWorkOrder();
         var offer = offerOf(rahim);
         asTenant(() -> jdbc.update("update offer set expires_at = now() - interval '1 minute' where id = ?", offer));
+        var assignedBefore = timeToAssignCount();
 
         call(post("/api/offers/{id}/accept", offer), TestTechnicians.token(rahim))
                 .andExpect(status().isConflict())
@@ -167,6 +177,13 @@ class OfferApiTests {
                 .andExpect(jsonPath("$.status").value("ROUTED"));
         call(get("/api/me/offers"), TestTechnicians.token(rahim))
                 .andExpect(jsonPath("$.items").value(empty()));
+        // Nothing was assigned, so nothing is recorded. (Recording waits for the commit too, which guards against
+        // a commit failure; no test here can force one.)
+        assertThat(timeToAssignCount()).isEqualTo(assignedBefore);
+    }
+
+    private long timeToAssignCount() {
+        return meters.timer("dispatch.work_orders.time_to_assign").count();
     }
 
     @Test

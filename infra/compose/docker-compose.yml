@@ -97,6 +97,25 @@ services:
       timeout: 3s
       retries: 20
 
+  # Observability (step 2.7, T25): Grafana with Prometheus (metrics), Tempo (traces), Loki and an OpenTelemetry
+  # collector, in one container. The app sends OTLP to 4318. Grafana: http://localhost:3000 (no login).
+  lgtm:
+    image: grafana/otel-lgtm:0.38.1
+    ports:
+      - "3000:3000"
+      - "4317:4317"
+      - "4318:4318"
+    volumes:
+      - ./grafana/dashboards.yaml:/otel-lgtm/grafana/conf/provisioning/dashboards/dispatch.yaml:ro
+      - ./grafana/dashboards:/otel-lgtm/dispatch-dashboards:ro
+      - ./grafana/alerting.yaml:/otel-lgtm/grafana/conf/provisioning/alerting/dispatch.yaml:ro
+    mem_limit: 1g
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://127.0.0.1:3000/api/health >/dev/null"]
+      interval: 5s
+      timeout: 3s
+      retries: 40
+
   # Catches every email the app sends (step 2.4): SMTP on 1025, inbox at http://localhost:8025. Nothing leaves
   # the machine.
   mailpit:
@@ -165,6 +184,7 @@ services:
     <<: *app
     build: ../../app  # app-2 runs the same image; building it twice at once fails
     environment:
+      LOGGING_STRUCTURED_FORMAT_CONSOLE: ecs   # one JSON object per line, with trace.id and span.id
       SERVER_PORT: "8081"
       INSTANCE_NAME: app-1
       DB_APP_PASSWORD: ${DB_APP_PASSWORD:-dispatch_app}
@@ -172,6 +192,7 @@ services:
   app-2:
     <<: *app
     environment:
+      LOGGING_STRUCTURED_FORMAT_CONSOLE: ecs
       SERVER_PORT: "8082"
       INSTANCE_NAME: app-2
       DB_APP_PASSWORD: ${DB_APP_PASSWORD:-dispatch_app}

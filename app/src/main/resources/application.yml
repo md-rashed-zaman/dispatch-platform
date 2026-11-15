@@ -39,6 +39,10 @@ spring:
   cache:
     cache-names: technician-profiles  # created at startup, so their hit/miss metrics exist from the start
   kafka:
+    template:
+      observation-enabled: true       # producer spans, and the trace context in each message's headers
+    listener:
+      observation-enabled: true       # consumer spans that continue the producer's trace
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
@@ -132,6 +136,32 @@ springdoc:
       use-pkce-with-authorization-code-grant: true
 
 management:
+  # Observability (step 2.7, T25): metrics and traces over OTLP to Grafana's LGTM stack (compose: lgtm).
+  tracing:
+    sampling:
+      probability: ${TRACING_SAMPLING_PROBABILITY:1.0}   # every request locally; production samples a share
+  opentelemetry:
+    tracing:
+      export:
+        otlp:
+          endpoint: ${OTLP_ENDPOINT:http://localhost:4318}/v1/traces
+  otlp:
+    metrics:
+      export:
+        url: ${OTLP_ENDPOINT:http://localhost:4318}/v1/metrics
+        step: 10s                     # how often metrics are pushed
+        base-time-unit: seconds       # durations in seconds, as Prometheus expects
+  metrics:
+    distribution:
+      # Latency as a histogram, so p50/p95/p99 can be computed over any window and across instances.
+      # Averages hide the slow tail; percentiles show it.
+      percentiles-histogram:
+        http.server.requests: true
+        spring.kafka.listener: true   # consumer processing time
+        spring.kafka.template: true   # producer send time
+      # Exact bucket at the accept SLO (300 ms): "share of requests under 300 ms" is one bucket over the count.
+      slo:
+        http.server.requests: 100ms,300ms,1s
   health:
     redis:
       # Off for the same reason: Redis only speeds things up (cache) and protects (rate limit); without it the
@@ -154,3 +184,10 @@ management:
           # Not ready without the database: the load balancer stops sending traffic here. Liveness leaves
           # it out on purpose: restarting the app doesn't bring a database back.
           include: readinessState,db
+
+logging:
+  level:
+    # Telemetry export failures log a full stack trace every few seconds while the observability stack is down,
+    # burying the app's own logs. An outage there shows as a gap in Grafana instead (docs/failure-modes.md).
+    io.micrometer.registry.otlp.OtlpMeterRegistry: "off"
+    io.opentelemetry.exporter.internal.http.HttpExporter: "off"
