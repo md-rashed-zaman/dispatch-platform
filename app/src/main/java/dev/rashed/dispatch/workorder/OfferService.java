@@ -53,13 +53,15 @@ public class OfferService {
     private final ApplicationEventPublisher events;
     private final TransactionTemplate readOnly;
     private final TransactionTemplate readWrite;
+    private final WorkOrderMetrics metrics;
 
     OfferService(
             JdbcClient jdbc,
             WorkOrderRepository workOrders,
             OfferRepository offers,
             ApplicationEventPublisher events,
-            PlatformTransactionManager transactionManager) {
+            PlatformTransactionManager transactionManager,
+            WorkOrderMetrics metrics) {
         this.jdbc = jdbc;
         this.workOrders = workOrders;
         this.offers = offers;
@@ -67,6 +69,7 @@ public class OfferService {
         this.readOnly = new TransactionTemplate(transactionManager);
         this.readOnly.setReadOnly(true);
         this.readWrite = new TransactionTemplate(transactionManager);
+        this.metrics = metrics;
     }
 
     /**
@@ -116,6 +119,7 @@ public class OfferService {
             return offer.view();
         }
         if (offer.assignedTo() != null) {
+            metrics.acceptConflict();
             throw new WorkOrderAlreadyTakenException(offer.view().workOrderId());
         }
         if (offer.view().status() != OfferStatus.OFFERED) {
@@ -136,6 +140,7 @@ public class OfferService {
                         if (holder.filter(technicianId::equals).isPresent()) {
                             return offer.view().withStatus(OfferStatus.ACCEPTED);
                         }
+                        metrics.acceptConflict();
                         throw new WorkOrderAlreadyTakenException(workOrderId);
                     }
                     var now = Timestamps.now();
@@ -143,6 +148,10 @@ public class OfferService {
                         throw new OfferClosedException(offerId); // expired in the meantime: rolls the assignment back
                     }
                     offers.expireOthers(workOrderId, offerId);
+                    workOrders
+                            .findById(workOrderId)
+                            .map(WorkOrder::publishedAt)
+                            .ifPresent(publishedAt -> metrics.assigned(publishedAt, now));
                     events.publishEvent(new WorkOrderStatusChanged(
                             workOrderId,
                             offer.tenantId(),

@@ -1,0 +1,51 @@
+# Alert rules (step 2.7, T25). One page-worthy alert, on the accept latency SLO.
+apiVersion: 1
+groups:
+  - orgId: 1
+    name: dispatch-slo
+    folder: Dispatch
+    interval: 1m
+    rules:
+      - uid: accept-latency-fast-burn
+        title: Accept latency SLO burning fast
+        # Fast burn: more than 14.4% of accepts slower than 300 ms, over both the last 5 minutes and the last
+        # hour. At that rate the month's 1% error budget is gone in about two days. Two windows: the 1-hour one
+        # stops a single slow minute from paging, the 5-minute one stops paging after it's already over.
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange: { from: 300, to: 0 }
+            datasourceUid: prometheus
+            model:
+              refId: A
+              instant: true
+              expr: >-
+                (1 - sum(rate(http_server_requests_seconds_bucket{uri="/api/offers/{id}/accept",le="0.3"}[5m]))
+                / sum(rate(http_server_requests_seconds_count{uri="/api/offers/{id}/accept"}[5m])))
+                and on() sum(rate(http_server_requests_seconds_count{uri="/api/offers/{id}/accept"}[5m])) > 0
+          - refId: B
+            relativeTimeRange: { from: 3600, to: 0 }
+            datasourceUid: prometheus
+            model:
+              refId: B
+              instant: true
+              expr: >-
+                (1 - sum(rate(http_server_requests_seconds_bucket{uri="/api/offers/{id}/accept",le="0.3"}[1h]))
+                / sum(rate(http_server_requests_seconds_count{uri="/api/offers/{id}/accept"}[1h])))
+                and on() sum(rate(http_server_requests_seconds_count{uri="/api/offers/{id}/accept"}[1h])) > 0
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: math
+              expression: "$A > 0.144 && $B > 0.144"
+        for: 2m
+        # No accepts in the window: the ratio would be 0/0 = NaN, which Grafana counts as true and would keep
+        # firing forever. The "and ... > 0" turns that into no data, and no accepts is not a latency problem.
+        noDataState: OK
+        execErrState: Error
+        labels:
+          severity: page
+        annotations:
+          summary: "Accepts are slow: {{ humanizePercentage $values.A.Value }} over 300 ms in the last 5 minutes"
+          runbook_url: https://github.com/md-rashed-zaman/dispatch-platform/blob/main/docs/runbooks/accept-latency.md

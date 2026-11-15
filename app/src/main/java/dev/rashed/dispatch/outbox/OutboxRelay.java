@@ -1,15 +1,21 @@
 package dev.rashed.dispatch.outbox;
 
+import io.micrometer.core.instrument.Gauge;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.tracing.Tracer;
+import io.micrometer.tracing.propagation.Propagator;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -40,6 +46,8 @@ class OutboxRelay {
     private final int batchSize;
     private final Duration sendTimeout;
     private final boolean enabled;
+    private final Tracer tracer;
+    private final Propagator propagator;
     private int consecutiveFailures; // only the single scheduler thread touches it
 
     // The switch is checked at run time, not with @ConditionalOnProperty: conditions are evaluated before
@@ -50,13 +58,31 @@ class OutboxRelay {
             PlatformTransactionManager transactionManager,
             @Value("${dispatch.outbox.batch-size:100}") int batchSize,
             @Value("${dispatch.outbox.send-timeout:PT10S}") Duration sendTimeout,
-            @Value("${dispatch.outbox.relay-enabled:true}") boolean enabled) {
+            @Value("${dispatch.outbox.relay-enabled:true}") boolean enabled,
+            Tracer tracer,
+            Propagator propagator,
+            MeterRegistry meters) {
         this.jdbc = jdbc;
         this.kafka = kafka;
         this.transaction = new TransactionTemplate(transactionManager);
         this.batchSize = batchSize;
         this.sendTimeout = sendTimeout;
         this.enabled = enabled;
+        this.tracer = tracer;
+        this.propagator = propagator;
+        // The first sign the relay or Kafka is stuck (T17): events waiting more than a few seconds. Read when
+        // metrics are exported (every 10 s); only unsent rows are scanned.
+        Gauge.builder("dispatch.outbox.oldest_unpublished_age", this, OutboxRelay::oldestUnpublishedSeconds)
+                .description("Age of the oldest event not yet sent to Kafka")
+                .baseUnit("seconds")
+                .register(meters);
+    }
+
+    private double oldestUnpublishedSeconds() {
+        return jdbc.sql("select coalesce(extract(epoch from now() - min(created_at)), 0) from outbox_event"
+                        + " where published_at is null")
+                .query(Double.class)
+                .single();
     }
 
     @Scheduled(fixedDelayString = "${dispatch.outbox.relay-interval:PT0.5S}")
@@ -105,7 +131,7 @@ class OutboxRelay {
         // SKIP LOCKED: rows another transaction holds are passed over instead of waited on. With the lock above
         // nobody else holds them; it keeps the query safe if the relay is ever split by key.
         var batch = jdbc.sql("""
-                        select id, event_id, topic, message_key, event_type, payload::text as payload
+                        select id, event_id, topic, message_key, event_type, payload::text as payload, trace_parent
                         from outbox_event where published_at is null
                         order by id limit :limit
                         for update skip locked
@@ -117,7 +143,8 @@ class OutboxRelay {
                         rs.getString("topic"),
                         rs.getString("message_key"),
                         rs.getString("event_type"),
-                        rs.getString("payload")))
+                        rs.getString("payload"),
+                        rs.getString("trace_parent")))
                 .list();
         if (batch.isEmpty()) {
             return 0;
@@ -128,7 +155,7 @@ class OutboxRelay {
             var record = new ProducerRecord<>(event.topic(), event.key(), event.payload());
             record.headers().add("eventId", event.eventId().toString().getBytes(StandardCharsets.UTF_8));
             record.headers().add("eventType", event.type().getBytes(StandardCharsets.UTF_8));
-            sends.add(kafka.send(record));
+            sends.add(sendInTraceOf(event, record));
         }
         try {
             CompletableFuture.allOf(sends.toArray(CompletableFuture[]::new))
@@ -142,6 +169,27 @@ class OutboxRelay {
         return batch.size();
     }
 
+    /**
+     * Sends inside a span that continues the trace of the request that wrote the event, so the producer span
+     * (and the consumers after it) join that trace instead of starting new ones.
+     */
+    private CompletableFuture<SendResult<String, String>> sendInTraceOf(
+            Pending event, ProducerRecord<String, String> record) {
+        if (event.traceParent() == null) {
+            return kafka.send(record);
+        }
+        var span = propagator
+                .extract(Map.of("traceparent", event.traceParent()), Map::get)
+                .name("outbox relay")
+                .tag("event.type", event.type())
+                .start();
+        try (var scope = tracer.withSpan(span)) {
+            return kafka.send(record);
+        } finally {
+            span.end();
+        }
+    }
+
     /** Published events are kept a week for debugging and replays, then deleted. */
     @Scheduled(cron = "0 15 3 * * *")
     @SchedulerLock(name = "outbox-cleanup", lockAtMostFor = "PT30M", lockAtLeastFor = "PT1M")
@@ -151,5 +199,12 @@ class OutboxRelay {
         log.info("Deleted {} published outbox events older than a week", deleted);
     }
 
-    private record Pending(long id, UUID eventId, String topic, String key, String type, String payload) {}
+    private record Pending(
+            long id,
+            UUID eventId,
+            String topic,
+            String key,
+            String type,
+            String payload,
+            @Nullable String traceParent) {}
 }

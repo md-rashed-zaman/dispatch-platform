@@ -9,6 +9,7 @@ import dev.rashed.dispatch.TestTechnicians;
 import dev.rashed.dispatch.TestcontainersConfiguration;
 import dev.rashed.dispatch.outbox.Topics;
 import dev.rashed.dispatch.tenancy.TenantContext;
+import io.micrometer.tracing.Tracer;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -25,6 +26,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.micrometer.tracing.test.autoconfigure.AutoConfigureTracing;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -34,6 +36,7 @@ import org.testcontainers.kafka.KafkaContainer;
 /** Events reach Kafka through the outbox: in order per work order, and never lost while Kafka is down. */
 @Import({TestcontainersConfiguration.class, KafkaTestcontainersConfiguration.class})
 @SpringBootTest
+@AutoConfigureTracing // tests run with a no-op tracer unless they ask for the real one
 class OutboxRelayTests {
 
     @Autowired
@@ -47,6 +50,9 @@ class OutboxRelayTests {
 
     @Autowired
     KafkaContainer kafka;
+
+    @Autowired
+    Tracer tracer;
 
     final UUID tenant = UUID.randomUUID();
     KafkaConsumer<String, String> consumer;
@@ -122,6 +128,32 @@ class OutboxRelayTests {
 
         assertThat(awaitEvents(workOrder, 1)).hasSize(1);
         await().atMost(Duration.ofSeconds(10)).until(() -> unpublished(workOrder) == 0);
+    }
+
+    /**
+     * The request's trace goes with the event: stored in the outbox row, continued by the relay, and carried
+     * in the Kafka message's traceparent header, so consumers join the same trace (T25).
+     */
+    @Test
+    void theEventCarriesTheTraceOfTheRequestThatPublishedIt() {
+        var request = tracer.nextSpan().name("test request").start();
+        UUID workOrder;
+        try (var scope = tracer.withSpan(request)) {
+            workOrder = publishedWorkOrder();
+        } finally {
+            request.end();
+        }
+        var traceId = request.context().traceId();
+
+        var stored = jdbc.queryForObject(
+                "select trace_parent from outbox_event where message_key = ? order by id limit 1",
+                String.class,
+                workOrder.toString());
+        assertThat(stored).startsWith("00-" + traceId + "-");
+        var record = awaitEvents(workOrder, 1).getFirst();
+        assertThat(header(record, "traceparent"))
+                .startsWith("00-" + traceId + "-")
+                .isNotEqualTo(stored);
     }
 
     private UUID publishedWorkOrder() {

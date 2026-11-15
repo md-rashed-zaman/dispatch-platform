@@ -109,6 +109,11 @@
             <artifactId>bucket4j_jdk17-lettuce</artifactId>
             <version>${bucket4j.version}</version>
         </dependency>
+        <!-- Metrics and traces over OTLP to Grafana's LGTM stack (T25): Micrometer + OpenTelemetry. -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-opentelemetry</artifactId>
+        </dependency>
         <!-- S3 API for photos: SeaweedFS locally, Amazon S3 in the cloud, same code (T15). -->
         <dependency>
             <groupId>software.amazon.awssdk</groupId>
@@ -182,6 +187,11 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-webmvc-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-opentelemetry-test</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
