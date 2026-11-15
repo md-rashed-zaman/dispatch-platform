@@ -1,8 +1,0 @@
-# Dispatch's own dashboards, next to the ones the image ships (RED metrics, JVM).
-apiVersion: 1
-providers:
-  - name: Dispatch
-    folder: Dispatch
-    type: file
-    options:
-      path: /otel-lgtm/dispatch-dashboards
