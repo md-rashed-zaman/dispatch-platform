@@ -11,16 +11,21 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import jakarta.persistence.Version;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UuidGenerator;
 import org.hibernate.type.SqlTypes;
+import org.springframework.data.domain.AfterDomainEventPublication;
+import org.springframework.data.domain.DomainEvents;
 
 /** A freelance technician who can take work orders from any tenant. Aggregate root. */
 @Entity
@@ -57,6 +62,9 @@ public class Technician {
     @Version
     private Long version;
 
+    @Transient
+    private final List<Object> events = new ArrayList<>();
+
     @Column(updatable = false)
     private Instant createdAt;
 
@@ -82,6 +90,26 @@ public class Technician {
         this.serviceRadiusKm = serviceRadiusKm;
         this.status = TechnicianStatus.PENDING_VERIFICATION;
         this.createdAt = Timestamps.now();
+    }
+
+    /** The technician changed what they do and how far they travel. */
+    public void updateProfile(Collection<String> skills, int serviceRadiusKm) {
+        if (serviceRadiusKm < 1 || serviceRadiusKm > MAX_SERVICE_RADIUS_KM) {
+            throw new IllegalArgumentException("Service radius must be 1 to " + MAX_SERVICE_RADIUS_KM + " km");
+        }
+        this.skills = Skill.codes(skills);
+        this.serviceRadiusKm = serviceRadiusKm;
+        events.add(new TechnicianUpdated(id));
+    }
+
+    @DomainEvents
+    List<Object> pendingEvents() {
+        return List.copyOf(events);
+    }
+
+    @AfterDomainEventPublication
+    void clearEvents() {
+        events.clear();
     }
 
     public static Technician register(

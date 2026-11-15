@@ -1,11 +1,13 @@
 package dev.rashed.dispatch.technician;
 
+import dev.rashed.dispatch.identity.CurrentUser;
 import dev.rashed.dispatch.shared.CursorPage;
 import dev.rashed.dispatch.shared.GeoPoint;
 import dev.rashed.dispatch.shared.Skill;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Max;
@@ -13,7 +15,12 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import java.util.List;
+import java.util.UUID;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -24,9 +31,28 @@ import org.springframework.web.bind.annotation.RestController;
 class TechnicianController {
 
     private final TechnicianSearch search;
+    private final TechnicianProfiles profiles;
 
-    TechnicianController(TechnicianSearch search) {
+    TechnicianController(TechnicianSearch search, TechnicianProfiles profiles) {
         this.search = search;
+        this.profiles = profiles;
+    }
+
+    @Operation(
+            summary = "A technician's public profile",
+            description = "Skills, service radius, rating. No contact" + " details or home location.")
+    @GetMapping("/{id}")
+    TechnicianProfile profile(@PathVariable UUID id) {
+        return profiles.find(id);
+    }
+
+    @Operation(summary = "Update my skills and service radius (technicians)")
+    @PutMapping("/me")
+    TechnicianProfile updateMine(@Valid @RequestBody UpdateTechnicianProfileRequest request) {
+        var technicianId = CurrentUser.current()
+                .map(CurrentUser::technicianId)
+                .orElseThrow(() -> new AccessDeniedException("Only a technician can update a technician profile"));
+        return profiles.update(technicianId, request);
     }
 
     @Operation(
