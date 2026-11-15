@@ -106,9 +106,10 @@ services:
       - "4317:4317"
       - "4318:4318"
     volumes:
-      - ./grafana/dashboards.yaml:/otel-lgtm/grafana/conf/provisioning/dashboards/dispatch.yaml:ro
+      # Directories, not single files: a file bind mount keeps pointing at the old file after git replaces it.
+      - ./grafana/provisioning/dashboards:/otel-lgtm/grafana/conf/provisioning/dashboards:ro
+      - ./grafana/provisioning/alerting:/otel-lgtm/grafana/conf/provisioning/alerting:ro
       - ./grafana/dashboards:/otel-lgtm/dispatch-dashboards:ro
-      - ./grafana/alerting.yaml:/otel-lgtm/grafana/conf/provisioning/alerting/dispatch.yaml:ro
     mem_limit: 1g
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://127.0.0.1:3000/api/health >/dev/null"]

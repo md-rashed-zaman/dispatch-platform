@@ -49,3 +49,35 @@ groups:
         annotations:
           summary: "Accepts are slow: {{ humanizePercentage $values.A.Value }} over 300 ms in the last 5 minutes"
           runbook_url: https://github.com/md-rashed-zaman/dispatch-platform/blob/main/docs/runbooks/accept-latency.md
+
+      - uid: api-server-errors
+        title: API answering with server errors
+        # Added after chaos day (docs/runbooks/postmortem-2026-11-16.md): a lock on work_order made every endpoint
+        # answer 503 for five minutes and nothing paged, because the latency alert only sees accepts that finish.
+        # More than 5% of API responses are 5xx, over 5 minutes.
+        condition: B
+        data:
+          - refId: A
+            relativeTimeRange: { from: 300, to: 0 }
+            datasourceUid: prometheus
+            model:
+              refId: A
+              instant: true
+              expr: >-
+                (sum(rate(http_server_requests_seconds_count{outcome="SERVER_ERROR",uri!~"/actuator.*"}[5m]))
+                / sum(rate(http_server_requests_seconds_count{uri!~"/actuator.*"}[5m])))
+                and on() sum(rate(http_server_requests_seconds_count{uri!~"/actuator.*"}[5m])) > 0
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: math
+              expression: "$A > 0.05"
+        for: 2m
+        noDataState: OK
+        execErrState: Error
+        labels:
+          severity: page
+        annotations:
+          summary: "{{ humanizePercentage $values.A.Value }} of API responses are server errors"
+          runbook_url: https://github.com/md-rashed-zaman/dispatch-platform/blob/main/docs/runbooks/api-errors.md

@@ -42,7 +42,12 @@ select pid, now() - xact_start as age, left(query, 80) from pg_stat_activity
 where xact_start < now() - interval '5 seconds' order by age desc;
 ```
 
-A transaction open for seconds while holding a `work_order` row lock blocks every accept for that job. Find what it is (a job, a migration, an admin session). Ending it (`select pg_cancel_backend(pid)`) releases the queue.
+A transaction open for seconds while holding a `work_order` lock blocks every accept for that job (or, for a table lock, every write). Find what it is (a job, a migration, an admin session), then end it:
+
+- state `active` (running a statement): `select pg_cancel_backend(pid);`. The statement is cancelled and the aborted transaction releases its locks at once.
+- state `idle in transaction`: nothing is running, so there's nothing to cancel. `select pg_terminate_backend(pid);`.
+
+Since V14 the app's own statements give up after 5 s of waiting for a lock (503 to the client), so a blocker no longer exhausts the connection pool, but the affected requests keep failing until it's gone. Practiced on chaos day: [postmortem 2026-11-16](postmortem-2026-11-16.md).
 
 ## 4. Mitigate
 

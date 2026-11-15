@@ -1,0 +1,17 @@
+# Mounted as a whole directory (a single-file bind mount goes stale when git replaces the file), so this file
+# also declares the dashboards the image ships with.
+apiVersion: 1
+providers:
+  - name: Dispatch
+    folder: Dispatch
+    type: file
+    options:
+      path: /otel-lgtm/dispatch-dashboards
+  - name: "RED Metrics (classic histogram)"
+    type: file
+    options:
+      path: /otel-lgtm/grafana-dashboard-red-metrics-classic.json
+  - name: "JVM Metrics"
+    type: file
+    options:
+      path: /otel-lgtm/grafana-dashboard-jvm-metrics.json

@@ -12,6 +12,8 @@ import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataAccessResourceFailureException;
+import org.springframework.dao.PessimisticLockingFailureException;
+import org.springframework.dao.QueryTimeoutException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
@@ -56,10 +58,15 @@ class ApiExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler({
         DependencyUnavailableException.class,
         CannotCreateTransactionException.class,
-        DataAccessResourceFailureException.class
+        DataAccessResourceFailureException.class,
+        // Waited too long for a lock, or a statement ran past its timeout (V14): the database is busy, not
+        // broken, and the same request may well work in a moment.
+        PessimisticLockingFailureException.class,
+        QueryTimeoutException.class
     })
     ResponseEntity<ProblemDetail> unavailable(Exception ex) {
         var what = ex instanceof DependencyUnavailableException d ? d.dependency() : "the database";
+        // shortcut: lock waits and timeouts read as "can't reach the database"; say "busy" if clients ever care.
         log.warn("Request failed because {} is unavailable: {}", what, ex.getMessage());
         var problem = problem(
                 HttpStatus.SERVICE_UNAVAILABLE,
