@@ -1,0 +1,6 @@
+{
+  "model" : "gemini-flash-lite-latest",
+  "text" : "{\n  \"checklist\": [\n    \"Photo of the installed solar panels on the roof\",\n    \"Test report of solar panel power generation\"\n  ],\n  \"endsAt\": \"2026-11-20T12:00\",\n  \"siteAddress\": \"সাভার কারখানা\",\n  \"skills\": [\n    \"solar\",\n    \"electrical\"\n  ],\n  \"startsAt\": \"2026-11-20T09:00\",\n  \"title\": \"Install solar panels on the roof of Savar factory\",\n  \"urgency\": \"NORMAL\"\n}",
+  "inputTokens" : 899,
+  "outputTokens" : 140
+}

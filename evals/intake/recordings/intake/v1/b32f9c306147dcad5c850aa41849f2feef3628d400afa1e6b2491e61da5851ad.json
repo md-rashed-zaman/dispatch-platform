@@ -1,0 +1,6 @@
+{
+  "model" : "gemini-flash-lite-latest",
+  "text" : "{\n  \"checklist\": [\n    \"Test wifi speed and signal strength\",\n    \"Check router and switch configurations\"\n  ],\n  \"endsAt\": \"2026-11-19T17:00\",\n  \"siteAddress\": \"Gulshan 1 branch\",\n  \"skills\": [\n    \"networking\"\n  ],\n  \"startsAt\": \"2026-11-19T13:00\",\n  \"title\": \"WiFi is very slow\",\n  \"urgency\": \"NORMAL\"\n}",
+  "inputTokens" : 848,
+  "outputTokens" : 126
+}

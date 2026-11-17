@@ -1,0 +1,6 @@
+{
+  "model" : "gemini-flash-lite-latest",
+  "text" : "{\n  \"checklist\": [\n    \"Check generator starter and battery\",\n    \"Test generator operation under load\"\n  ],\n  \"endsAt\": \"2026-11-18T15:00\",\n  \"siteAddress\": \"Motijheel head office\",\n  \"skills\": [\n    \"generator\"\n  ],\n  \"startsAt\": \"2026-11-18T11:00\",\n  \"title\": \"Generator won't start during load shedding\",\n  \"urgency\": \"URGENT\"\n}",
+  "inputTokens" : 850,
+  "outputTokens" : 131
+}

@@ -1,0 +1,6 @@
+{
+  "model" : "gemini-flash-lite-latest",
+  "text" : "{\n  \"checklist\": [\n    \"Verify new staff access card configuration\",\n    \"Test card reader at entry point\"\n  ],\n  \"endsAt\": \"2026-11-22T17:00\",\n  \"siteAddress\": \"Tejgaon office\",\n  \"skills\": [\n    \"access-control\"\n  ],\n  \"startsAt\": \"2026-11-22T09:00\",\n  \"title\": \"Setup access card for new staff\",\n  \"urgency\": \"NORMAL\"\n}",
+  "inputTokens" : 852,
+  "outputTokens" : 130
+}

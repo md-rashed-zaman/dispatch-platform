@@ -1,0 +1,6 @@
+{
+  "model" : "gemini-flash-lite-latest",
+  "text" : "{\n  \"checklist\": [\n    \"Clear the paper jam from the printer\",\n    \"Test print to verify normal operation\"\n  ],\n  \"endsAt\": \"2026-11-19T17:00\",\n  \"siteAddress\": null,\n  \"skills\": [\n    \"printer\"\n  ],\n  \"startsAt\": \"2026-11-19T13:00\",\n  \"title\": \"Printer jammed again\",\n  \"urgency\": \"NORMAL\"\n}",
+  "inputTokens" : 890,
+  "outputTokens" : 122
+}

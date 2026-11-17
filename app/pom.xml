@@ -24,6 +24,8 @@
         <palantir-java-format.version>2.103.0</palantir-java-format.version>
         <jacoco.version>0.8.16</jacoco.version>
         <aws-sdk.version>2.46.7</aws-sdk.version>
+        <!-- Evals call a real model: run them on purpose with -DexcludedGroups=none (IntakeEvals) -->
+        <excludedGroups>eval</excludedGroups>
         <spring-ai.version>2.0.2</spring-ai.version>
     </properties>
     <dependencies>

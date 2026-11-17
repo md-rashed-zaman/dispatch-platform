@@ -24,6 +24,7 @@ Built as a portfolio project to show production backend engineering: correctness
 | **Fails politely** | Database or storage down: 503 with `Retry-After` within 3 s, readiness `DOWN`, automatic recovery. Every error is RFC 9457 Problem Details. | [docs/failure-modes.md](docs/failure-modes.md) |
 | **Chaos day** | Kafka and Redis stopped under traffic: no errors. A lock on one table took the whole API down through the connection pool, and nothing paged. Fixed with database timeouts and an error-rate alert, then the same failure repeated: only the blocked writes failed, fast, and the alert fired. | [postmortem](docs/runbooks/postmortem-2026-11-16.md), [ADR 0011](docs/adr/0011-database-timeouts-on-the-application-role.md), `DatabaseLockTimeoutTests` |
 | **AI that can't fail a request** | Every model call goes through one gateway: versioned prompts, a 10 s timeout, retries on 503, a second model when the first is down or hanging, a circuit breaker and rate limit per model, a daily budget per company, phone numbers and emails redacted before sending, and an audit row per attempt. Skill suggestions pick only from skills technicians actually have; with a bad key or the provider down the form still works, without suggestions. | [ADR 0012](docs/adr/0012-ai-gateway-in-front-of-model-providers.md), [measured limits](docs/ai-limits.md), `AiGatewayTests` |
+| **A work order from one message, measured** | "Motijheel head office er AC theke pani porche, kalke bikele kauke pathan" fills the form: title, `ac-repair`, the address, tomorrow 13:00-17:00, a checklist. The answer is checked like untrusted input, gets one corrected try with its errors, and what's still wrong is left for the dispatcher. 50-case eval in English, Banglish and Bangla: 99.6% of fields right. | [evals](evals/README.md), [results](#ai-evals) |
 
 ## Architecture
 
@@ -125,6 +126,24 @@ The *Dispatch overview* dashboard: SLOs with error budgets, RED metrics, busines
 
 ![Dispatch overview dashboard](docs/images/observability-dashboard.png)
 
+## AI evals
+
+The intake parser is measured on 50 messages a bank might send (20 English, 15 Banglish, 15 Bangla), each with the right answer per field ([how it works](evals/README.md)). Changing the prompt is an experiment: re-run, compare.
+
+| Field | Prompt v1 | Prompt v2 |
+|---|---|---|
+| Skills | 100% | 100% |
+| Day | 100% | 100% |
+| Part of day | 89.1% | **100%** |
+| Urgency | 100% | 97.9% |
+| Address | 100% | 100% |
+| Usable draft | 100% | 100% |
+| **All fields** | **98.2%** (275 / 280) | **99.6%** (279 / 280) |
+
+- v1 read *bikel* (বিকেল, late afternoon) as evening in all 5 Bangla and Banglish cases. v2 adds one line naming the Bangla parts of the day, and fixes all 5.
+- Two fresh v2 runs both scored 279 / 280, missing a different field each time: one field in 280 is the noise level, so a smaller difference between prompts means nothing.
+- Answers are recorded, so re-scoring after a change to the cases or the scoring costs no API calls ([results](evals/results)).
+
 ## Getting started
 
 Requirements: Docker, JDK 21+.
@@ -197,7 +216,7 @@ app/              Spring Boot modular monolith
 infra/compose/    Local Docker Compose stack
 infra/helm/       Kubernetes Helm chart (later)
 load-tests/       k6 scripts
-evals/            AI evaluation datasets and results
+evals/            AI evals: cases, recorded answers, results
 docs/adr/         Architecture decision records
 docs/diagrams/    Context map, ERD, sequence diagrams
 docs/learning/    Learning journal and open questions

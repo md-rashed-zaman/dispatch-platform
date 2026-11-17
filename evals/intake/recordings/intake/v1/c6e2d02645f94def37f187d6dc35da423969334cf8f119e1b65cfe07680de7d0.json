@@ -1,0 +1,6 @@
+{
+  "model" : "gemini-flash-lite-latest",
+  "text" : "{\n  \"checklist\": [\n    \"Check POS terminal connection\",\n    \"Resolve communication error\",\n    \"Test transaction processing\"\n  ],\n  \"endsAt\": \"2026-11-18T20:00\",\n  \"siteAddress\": \"Dhanmondi 27 branch\",\n  \"skills\": [\n    \"pos-terminal\"\n  ],\n  \"startsAt\": \"2026-11-18T17:00\",\n  \"title\": \"POS terminal communication error\",\n  \"urgency\": \"NORMAL\"\n}",
+  "inputTokens" : 859,
+  "outputTokens" : 134
+}

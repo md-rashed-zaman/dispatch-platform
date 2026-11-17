@@ -1,0 +1,6 @@
+{
+  "model" : "gemini-flash-lite-latest",
+  "text" : "{\n  \"checklist\": [\n    \"Test card machine payment processing\",\n    \"Check network connection for POS terminals\",\n    \"Provide service report\"\n  ],\n  \"endsAt\": \"2026-11-18T17:00\",\n  \"siteAddress\": \"Uttara Sector 7 outlet\",\n  \"skills\": [\n    \"pos-terminal\",\n    \"networking\"\n  ],\n  \"startsAt\": \"2026-11-18T13:00\",\n  \"title\": \"Card machines failing payments at Uttara Sector 7 outlet\",\n  \"urgency\": \"NORMAL\"\n}",
+  "inputTokens" : 902,
+  "outputTokens" : 148
+}

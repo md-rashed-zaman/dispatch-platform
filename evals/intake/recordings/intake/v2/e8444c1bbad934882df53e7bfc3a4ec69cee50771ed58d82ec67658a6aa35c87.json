@@ -1,0 +1,6 @@
+{
+  "model" : "gemini-flash-lite-latest",
+  "text" : "{\n  \"checklist\": [\n    \"Check ATM card reader status\",\n    \"Retrieve stuck customer card\",\n    \"Test card reader operation\"\n  ],\n  \"endsAt\": \"2026-11-18T14:00\",\n  \"siteAddress\": \"Sylhet branch\",\n  \"skills\": [\n    \"atm\"\n  ],\n  \"startsAt\": \"2026-11-18T11:00\",\n  \"title\": \"ATM card reader not working, card stuck\",\n  \"urgency\": \"URGENT\"\n}",
+  "inputTokens" : 902,
+  "outputTokens" : 136
+}

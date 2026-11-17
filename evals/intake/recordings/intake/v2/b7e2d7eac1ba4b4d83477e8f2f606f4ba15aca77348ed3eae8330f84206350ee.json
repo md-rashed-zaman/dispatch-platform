@@ -1,0 +1,6 @@
+{
+  "model" : "gemini-flash-lite-latest",
+  "text" : "{\n  \"checklist\": [\n    \"Check ATM cash dispenser mechanism\",\n    \"Test cash withdrawal function\",\n    \"Photo of error log or screen\"\n  ],\n  \"endsAt\": \"2026-11-18T15:00\",\n  \"siteAddress\": \"Banani branch\",\n  \"skills\": [\n    \"atm\"\n  ],\n  \"startsAt\": \"2026-11-18T11:00\",\n  \"title\": \"ATM cash dispensing failure\",\n  \"urgency\": \"URGENT\"\n}",
+  "inputTokens" : 897,
+  "outputTokens" : 134
+}

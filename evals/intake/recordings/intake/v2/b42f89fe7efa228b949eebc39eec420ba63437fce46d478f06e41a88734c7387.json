@@ -1,0 +1,6 @@
+{
+  "model" : "gemini-flash-lite-latest",
+  "text" : "{\n  \"checklist\": [\n    \"Inspect backup generator functionality\",\n    \"Perform routine service and maintenance\",\n    \"Provide service report\"\n  ],\n  \"endsAt\": \"2026-11-23T17:00\",\n  \"siteAddress\": \"Gazipur factory\",\n  \"skills\": [\n    \"generator\"\n  ],\n  \"startsAt\": \"2026-11-23T09:00\",\n  \"title\": \"Service backup generator\",\n  \"urgency\": \"NORMAL\"\n}",
+  "inputTokens" : 895,
+  "outputTokens" : 128
+}

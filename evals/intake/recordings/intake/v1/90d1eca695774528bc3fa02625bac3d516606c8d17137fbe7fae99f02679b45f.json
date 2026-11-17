@@ -1,0 +1,6 @@
+{
+  "model" : "gemini-flash-lite-latest",
+  "text" : "{\n  \"checklist\": [\n    \"Check router and switch configuration\",\n    \"Test internet speed\",\n    \"Verify Wi-Fi signal strength in Gulshan 1 branch\"\n  ],\n  \"endsAt\": \"2026-11-19T17:00\",\n  \"siteAddress\": \"গুলশান ১ শাখা\",\n  \"skills\": [\n    \"networking\"\n  ],\n  \"startsAt\": \"2026-11-19T13:00\",\n  \"title\": \"WiFi is very slow at Gulshan 1 branch\",\n  \"urgency\": \"NORMAL\"\n}",
+  "inputTokens" : 848,
+  "outputTokens" : 144
+}

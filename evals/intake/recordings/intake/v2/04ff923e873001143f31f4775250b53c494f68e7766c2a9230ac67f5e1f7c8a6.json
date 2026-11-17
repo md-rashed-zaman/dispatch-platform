@@ -1,0 +1,6 @@
+{
+  "model" : "gemini-flash-lite-latest",
+  "text" : "{\n  \"checklist\": [\n    \"Check main power supply and sockets\",\n    \"Test electrical line functionality\",\n    \"Provide photo of repaired socket or distribution board\"\n  ],\n  \"endsAt\": \"2026-11-18T15:00\",\n  \"siteAddress\": \"Chattogram GEC branch\",\n  \"skills\": [\n    \"electrical\"\n  ],\n  \"startsAt\": \"2026-11-18T11:00\",\n  \"title\": \"No power and sockets not working\",\n  \"urgency\": \"URGENT\"\n}",
+  "inputTokens" : 903,
+  "outputTokens" : 142
+}

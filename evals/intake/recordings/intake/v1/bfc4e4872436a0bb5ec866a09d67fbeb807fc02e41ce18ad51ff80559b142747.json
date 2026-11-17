@@ -1,0 +1,6 @@
+{
+  "model" : "gemini-flash-lite-latest",
+  "text" : "{\n  \"checklist\": [\n    \"Inspect equipment and diagnose issue\",\n    \"Perform required maintenance or repair\",\n    \"Obtain manager sign-off on completion\"\n  ],\n  \"endsAt\": \"2026-11-19T17:00\",\n  \"siteAddress\": null,\n  \"skills\": [],\n  \"startsAt\": \"2026-11-19T09:00\",\n  \"title\": \"General assistance and maintenance\",\n  \"urgency\": \"NORMAL\"\n}",
+  "inputTokens" : 843,
+  "outputTokens" : 124
+}

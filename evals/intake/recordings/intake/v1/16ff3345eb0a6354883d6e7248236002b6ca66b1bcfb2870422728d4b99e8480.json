@@ -1,0 +1,6 @@
+{
+  "model" : "gemini-flash-lite-latest",
+  "text" : "{\n  \"checklist\": [\n    \"Photo of the installed solar panels on the roof\",\n    \"Test report for power generation\"\n  ],\n  \"endsAt\": \"2026-11-25T17:00\",\n  \"siteAddress\": \"Savar warehouse\",\n  \"skills\": [\n    \"solar\"\n  ],\n  \"startsAt\": \"2026-11-25T09:00\",\n  \"title\": \"Install 4 new solar panels on the roof\",\n  \"urgency\": \"NORMAL\"\n}",
+  "inputTokens" : 852,
+  "outputTokens" : 132
+}

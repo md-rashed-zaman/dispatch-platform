@@ -1,0 +1,6 @@
+{
+  "model" : "gemini-flash-lite-latest",
+  "text" : "{\n  \"checklist\": [\n    \"Inspect printer error E05\",\n    \"Fix printer issue\",\n    \"Test print functionality\"\n  ],\n  \"endsAt\": \"2026-11-19T12:00\",\n  \"siteAddress\": \"গুলশান অফিস\",\n  \"skills\": [\n    \"printer\"\n  ],\n  \"startsAt\": \"2026-11-19T09:00\",\n  \"title\": \"Printer shows error E05\",\n  \"urgency\": \"NORMAL\"\n}",
+  "inputTokens" : 898,
+  "outputTokens" : 131
+}

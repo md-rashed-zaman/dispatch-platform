@@ -56,6 +56,26 @@ Fields: Title, Description, Site address, Site location (latitude, longitude; a 
 - Submit: `POST /api/work-orders` → on 201, "Publish now" or "Save as draft" (two buttons: the second only creates; the first creates then publishes).
 - Validation: client-side for required fields and number ranges; server Problem Details field errors (`errors[]`) shown under each field; other problems in an alert at the top.
 
+### Describe the job (step 3.3)
+
+```
+┌ Describe the job (optional) ──────────────────────────────────┐
+│ [Gulshan office printer shows E05, need someone tomorrow…    ]│
+│ Paste the branch's message; AI fills the form for you to check│
+│                                            [✦ Fill the form]  │
+│ Filled 6 fields from the message. Still to fill: site location│  (role=status)
+└───────────────────────────────────────────────────────────────┘
+```
+
+- **Top of the form, optional.** A panel with a textarea and a secondary button. The form below works the same with or without it.
+- **Fills empty fields only.** Anything the dispatcher already typed is kept. The message itself goes into Description.
+- **What was filled is visible.** Each AI-filled field gets the `primary-soft` background and " (filled by AI)" for screen readers, until the dispatcher edits it. Nothing is submitted for them: Save and Publish stay their decision.
+- **Status line** (one `role="status"` message, focus doesn't move):
+  - "Filled N fields from the message. Still to fill: site location[, …]." Latitude and longitude are always left to the person: a language model shouldn't guess coordinates.
+  - "Sounds urgent: the time window starts within the hour." when urgency is URGENT.
+  - Unavailable: "Couldn't read the message right now. Fill the form yourself; your text is in Description." Muted, not red.
+- **Loading:** the button shows the spinner with "Reading…", keeping its width. Typical 1-8 s; the form stays usable.
+
 ### Skill suggestions (step 3.2)
 
 ```

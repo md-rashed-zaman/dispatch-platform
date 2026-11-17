@@ -1,0 +1,6 @@
+{
+  "model" : "gemini-flash-lite-latest",
+  "text" : "{\n  \"checklist\": [\n    \"Inspect server room AC for water leakage\",\n    \"Clear clogged drain pipe or fix insulation\",\n    \"Test AC operation and take photo of working unit\"\n  ],\n  \"endsAt\": \"2026-11-22T17:00\",\n  \"siteAddress\": \"Agrabad, Chattogram\",\n  \"skills\": [\n    \"ac-repair\"\n  ],\n  \"startsAt\": \"2026-11-22T13:00\",\n  \"title\": \"Server room AC leaking water\",\n  \"urgency\": \"NORMAL\"\n}",
+  "inputTokens" : 901,
+  "outputTokens" : 145
+}
