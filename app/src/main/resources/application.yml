@@ -65,6 +65,16 @@ spring:
     properties:
       hibernate:
         default_batch_fetch_size: 50
+  ai:
+    google:
+      genai:
+        # From the environment only (.env locally, a secret in deployment), never in a file in git.
+        # Without one the client refuses to start, so the default is a placeholder: the app (and CI) start,
+        # and only a model call fails, with Google's invalid-key error (step 3.2 adds the fallback).
+        api-key: ${GEMINI_API_KEY:not-set}
+        chat:
+          model: gemini-flash-lite-latest   # about 1-4 s on the free tier; docs/ai-limits.md
+          temperature: 0.2                  # low: we want the same answer for the same input, not creativity
   security:
     oauth2:
       resourceserver:
