@@ -1,0 +1,6 @@
+{
+  "model" : "gemini-flash-lite-latest",
+  "text" : "{\n  \"checklist\": [\n    \"Check ATM cash dispensing mechanism\",\n    \"Test cash dispense function\",\n    \"Photo of ATM error log or status screen\"\n  ],\n  \"endsAt\": \"2026-11-18T15:00\",\n  \"siteAddress\": \"Banani branch Road 11\",\n  \"skills\": [\n    \"atm\"\n  ],\n  \"startsAt\": \"2026-11-18T11:00\",\n  \"title\": \"ATM not dispensing cash at Banani branch\",\n  \"urgency\": \"URGENT\"\n}",
+  "inputTokens" : 902,
+  "outputTokens" : 144
+}

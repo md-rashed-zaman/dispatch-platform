@@ -1,0 +1,6 @@
+{
+  "model" : "gemini-flash-lite-latest",
+  "text" : "{\n  \"checklist\": [\n    \"Check generator starter and battery\",\n    \"Test generator operation after repair\",\n    \"Take photo of repaired generator\"\n  ],\n  \"endsAt\": \"2026-11-18T14:00\",\n  \"siteAddress\": \"Mirpur DOHS office\",\n  \"skills\": [\n    \"generator\"\n  ],\n  \"startsAt\": \"2026-11-18T10:00\",\n  \"title\": \"Generator won't start at Mirpur DOHS office\",\n  \"urgency\": \"URGENT\"\n}",
+  "inputTokens" : 847,
+  "outputTokens" : 145
+}

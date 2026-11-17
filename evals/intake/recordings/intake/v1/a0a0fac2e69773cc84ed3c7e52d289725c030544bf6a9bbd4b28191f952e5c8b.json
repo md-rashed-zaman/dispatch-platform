@@ -1,0 +1,6 @@
+{
+  "model" : "gemini-flash-lite-latest",
+  "text" : "{\n  \"checklist\": [\n    \"Photo of installed CCTV cameras\",\n    \"Photo of network setup and configuration\"\n  ],\n  \"endsAt\": \"2026-11-19T17:00\",\n  \"siteAddress\": \"Narayanganj warehouse\",\n  \"skills\": [\n    \"cctv\",\n    \"networking\"\n  ],\n  \"startsAt\": \"2026-11-19T09:00\",\n  \"title\": \"Install 4 CCTV cameras and set up network\",\n  \"urgency\": \"NORMAL\"\n}",
+  "inputTokens" : 863,
+  "outputTokens" : 138
+}

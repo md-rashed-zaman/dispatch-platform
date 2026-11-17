@@ -78,9 +78,43 @@ function validate(f: Form): Partial<Record<keyof Form, string>> {
 
 type Suggestion = { skills: string[]; available: boolean };
 
+/** POST /api/work-orders/draft-from-text */
+type Intake = {
+  draft: {
+    title: string | null;
+    description: string;
+    skills: string[];
+    urgency: "NORMAL" | "URGENT" | null;
+    siteAddress: string | null;
+    timeWindow: { startsAt: string; endsAt: string } | null;
+    checklist: string[];
+  };
+  missing: string[];
+  available: boolean;
+};
+
+const MISSING_LABEL: Record<string, string> = {
+  title: "title",
+  skills: "skills",
+  siteAddress: "site address",
+  timeWindow: "time window",
+  checklist: "checklist",
+  siteLocation: "site location",
+};
+
+/** An instant as the value of a datetime-local input, in the browser's time zone. */
+function localInput(iso: string): string {
+  const d = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 export function NewWorkOrderPage() {
   const [form, setForm] = useState<Form>(EMPTY);
   const [suggestion, setSuggestion] = useState<Suggestion | null>(null);
+  const [message, setMessage] = useState("");
+  const [aiFilled, setAiFilled] = useState<Set<keyof Form>>(new Set());
+  const [intakeStatus, setIntakeStatus] = useState("");
   const [errors, setErrors] = useState<Partial<Record<keyof Form, string>>>({});
   const [publish, setPublish] = useState(true);
   const navigate = useNavigate();
@@ -126,6 +160,36 @@ export function NewWorkOrderPage() {
     onSuccess: setSuggestion,
     onError: () => setSuggestion({ skills: [], available: false }), // the form works without it
   });
+  // Fills only empty fields: what the dispatcher typed is theirs (design-system screens.md §3, Describe the job).
+  const readMessage = useMutation({
+    mutationFn: () => post<Intake>("/api/work-orders/draft-from-text", { text: message.trim() }),
+    onSuccess: ({ draft, missing, available }) => {
+      const values: Partial<Form> = { description: draft.description };
+      if (available) {
+        if (draft.title) values.title = draft.title;
+        if (draft.siteAddress) values.siteAddress = draft.siteAddress;
+        if (draft.skills.length) values.skills = draft.skills.join(", ");
+        if (draft.timeWindow) {
+          values.startsAt = localInput(draft.timeWindow.startsAt);
+          values.endsAt = localInput(draft.timeWindow.endsAt);
+        }
+        if (draft.checklist.length) values.checklist = draft.checklist.join("\n");
+      }
+      const filled = (Object.keys(values) as (keyof Form)[]).filter((name) => !form[name].trim());
+      setForm({ ...form, ...Object.fromEntries(filled.map((name) => [name, values[name]])) });
+      setAiFilled(new Set(filled));
+      setSuggestion(null);
+      if (!available) {
+        setIntakeStatus("Couldn't read the message right now. Fill the form yourself; your text is in Description.");
+        return;
+      }
+      const todo = missing.map((m) => MISSING_LABEL[m] ?? m).join(", ");
+      const urgent = draft.urgency === "URGENT" ? " Sounds urgent: the time window starts within the hour." : "";
+      setIntakeStatus(`Filled ${filled.length} field${filled.length === 1 ? "" : "s"} from the message. Still to fill: ${todo}.${urgent}`);
+    },
+    onError: () => setIntakeStatus("Couldn't read the message right now. Fill the form yourself."),
+  });
+
   const chosen = skillCodes(form.skills);
   const addSkill = (code: string) => {
     if (!chosen.includes(code)) setForm({ ...form, skills: [...chosen, code].join(", ") });
@@ -151,10 +215,12 @@ export function NewWorkOrderPage() {
     onChange: (e: { target: { value: string } }) => {
       setForm({ ...form, [name]: e.target.value });
       if (name === "title" || name === "description") setSuggestion(null); // they described other text
+      if (aiFilled.has(name)) setAiFilled(new Set([...aiFilled].filter((n) => n !== name))); // theirs now
     },
     "aria-invalid": !!errors[name],
     "aria-describedby": errors[name] ? `${name}-error` : undefined,
-    className: `w-full rounded-md border bg-card px-3 py-2 text-base transition-colors ${errors[name] ? "border-destructive" : "border-border"}`,
+    "aria-description": aiFilled.has(name) ? "Filled by AI from the message" : undefined,
+    className: `w-full rounded-md border px-3 py-2 text-base transition-colors ${aiFilled.has(name) ? "bg-primary-soft" : "bg-card"} ${errors[name] ? "border-destructive" : "border-border"}`,
   });
 
   const unexplained = create.error && !(create.error instanceof ApiError && create.error.problem.errors);
@@ -166,6 +232,32 @@ export function NewWorkOrderPage() {
       </Link>
       <h1 className="mt-3 text-2xl font-semibold tracking-tight">New work order</h1>
       <p className="mt-1 text-sm text-muted-foreground">Published work orders go to the nearest verified technicians with the skills.</p>
+
+      <section aria-labelledby="describe-heading" className="mt-6 rounded-[10px] border border-border bg-card p-5 sm:p-6">
+        <h2 id="describe-heading" className="text-sm font-medium">
+          Describe the job <span className="font-normal text-muted-foreground">(optional)</span>
+        </h2>
+        <label htmlFor="message" className="sr-only">Message from the branch</label>
+        <textarea
+          id="message"
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+          rows={2}
+          maxLength={2000}
+          placeholder="Gulshan office printer shows E05, need someone tomorrow morning"
+          className="mt-2 w-full rounded-md border border-border bg-card px-3 py-2 text-base"
+        />
+        <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+          <p className="text-sm text-muted-foreground">Paste the branch's message; AI fills the form below for you to check.</p>
+          <Button type="button" variant="secondary" loading={readMessage.isPending} disabled={!message.trim()} onClick={() => readMessage.mutate()}>
+            {!readMessage.isPending && <Sparkles aria-hidden className="size-4" />}
+            {readMessage.isPending ? "Reading…" : "Fill the form"}
+          </Button>
+        </div>
+        <p role="status" aria-atomic="true" className={`text-sm text-muted-foreground ${intakeStatus ? "mt-3" : ""}`}>
+          {intakeStatus}
+        </p>
+      </section>
 
       <form noValidate onSubmit={(e) => submit(e, true)} className="mt-6 space-y-6 rounded-[10px] border border-border bg-card p-5 sm:p-6">
         {unexplained && <ErrorNote>{create.error.message}</ErrorNote>}

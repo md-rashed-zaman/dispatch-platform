@@ -1,0 +1,6 @@
+{
+  "model" : "gemini-flash-lite-latest",
+  "text" : "{\n  \"checklist\": [\n    \"Check ATM power and display connections\",\n    \"Test ATM screen functionality\",\n    \"Photo of the working ATM screen\"\n  ],\n  \"endsAt\": \"2026-11-19T12:00\",\n  \"siteAddress\": \"Sylhet Zindabazar branch\",\n  \"skills\": [\n    \"atm\"\n  ],\n  \"startsAt\": \"2026-11-19T09:00\",\n  \"title\": \"ATM screen is black\",\n  \"urgency\": \"NORMAL\"\n}",
+  "inputTokens" : 898,
+  "outputTokens" : 137
+}

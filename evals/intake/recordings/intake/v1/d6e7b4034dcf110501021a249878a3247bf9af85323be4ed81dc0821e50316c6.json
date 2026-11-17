@@ -1,0 +1,6 @@
+{
+  "model" : "gemini-flash-lite-latest",
+  "text" : "{\n  \"checklist\": [\n    \"Check printer error status\",\n    \"Test print functionality\",\n    \"Photo of the repaired printer\"\n  ],\n  \"endsAt\": \"2026-11-19T12:00\",\n  \"siteAddress\": \"Gulshan 2 office\",\n  \"skills\": [\n    \"printer\"\n  ],\n  \"startsAt\": \"2026-11-19T09:00\",\n  \"title\": \"Printer not working at Gulshan 2 office\",\n  \"urgency\": \"NORMAL\"\n}",
+  "inputTokens" : 855,
+  "outputTokens" : 136
+}

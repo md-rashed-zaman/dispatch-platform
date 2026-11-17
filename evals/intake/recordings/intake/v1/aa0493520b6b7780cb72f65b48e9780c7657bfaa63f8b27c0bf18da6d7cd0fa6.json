@@ -1,0 +1,6 @@
+{
+  "model" : "gemini-flash-lite-latest",
+  "text" : "{\n  \"checklist\": [\n    \"Check main power supply and circuit breakers\",\n    \"Test all wall sockets for power output\",\n    \"Photo of the repaired electrical panel or sockets\"\n  ],\n  \"endsAt\": \"2026-11-18T14:00\",\n  \"siteAddress\": \"চট্টগ্রাম জিইসি শাখা\",\n  \"skills\": [\n    \"electrical\"\n  ],\n  \"startsAt\": \"2026-11-18T11:00\",\n  \"title\": \"Power failure and non-working sockets at GEC branch\",\n  \"urgency\": \"URGENT\"\n}",
+  "inputTokens" : 849,
+  "outputTokens" : 150
+}

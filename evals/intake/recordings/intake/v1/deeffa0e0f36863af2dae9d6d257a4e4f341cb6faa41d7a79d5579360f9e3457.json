@@ -1,0 +1,6 @@
+{
+  "model" : "gemini-flash-lite-latest",
+  "text" : "{\n  \"checklist\": [\n    \"Check AC refrigerant gas pressure\",\n    \"Refill AC gas and test cooling performance\"\n  ],\n  \"endsAt\": \"2026-11-23T20:00\",\n  \"siteAddress\": \"Khulna office\",\n  \"skills\": [\n    \"ac-repair\"\n  ],\n  \"startsAt\": \"2026-11-23T17:00\",\n  \"title\": \"AC gas refilling needed at Khulna office\",\n  \"urgency\": \"NORMAL\"\n}",
+  "inputTokens" : 849,
+  "outputTokens" : 135
+}

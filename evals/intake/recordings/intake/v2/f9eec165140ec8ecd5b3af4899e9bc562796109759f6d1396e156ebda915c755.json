@@ -1,0 +1,6 @@
+{
+  "model" : "gemini-flash-lite-latest",
+  "text" : "{\n  \"checklist\": [\n    \"Inspect all electrical wiring at the new branch\",\n    \"Verify power stability and safety compliance\",\n    \"Photo of the main electrical panel\"\n  ],\n  \"endsAt\": \"2026-11-19T17:00\",\n  \"siteAddress\": \"Bogura branch\",\n  \"skills\": [\n    \"electrical\"\n  ],\n  \"startsAt\": \"2026-11-19T09:00\",\n  \"title\": \"Check electrical wiring at new Bogura branch\",\n  \"urgency\": \"NORMAL\"\n}",
+  "inputTokens" : 903,
+  "outputTokens" : 141
+}
