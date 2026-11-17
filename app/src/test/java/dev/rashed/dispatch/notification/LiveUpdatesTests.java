@@ -53,9 +53,15 @@ class LiveUpdatesTests {
     @Autowired
     KafkaListenerEndpointRegistry listeners;
 
+    @Autowired
+    LiveUpdates liveUpdates;
+
     final HttpClient http = HttpClient.newHttpClient();
     final BlockingQueue<String> lines = new LinkedBlockingQueue<>();
     Thread reader;
+    java.io.InputStream body;
+
+    private static final String END_OF_STREAM = "<end of stream>";
 
     @BeforeEach
     void theLiveListenerIsReading() {
@@ -67,9 +73,10 @@ class LiveUpdatesTests {
     }
 
     @AfterEach
-    void closeStream() {
-        if (reader != null) {
-            reader.interrupt();
+    void closeStream() throws Exception {
+        // Closing the body ends the connection; interrupting the reader alone would leave it open on the server.
+        if (body != null) {
+            body.close();
         }
     }
 
@@ -100,6 +107,20 @@ class LiveUpdatesTests {
     }
 
     @Test
+    void openStreamsEndWhenTheAppShutsDown() throws Exception {
+        open(TestTokens.dispatcher());
+        assertThat(next()).isEqualTo(":connected");
+
+        liveUpdates.closeAll(); // what the context-closed event runs, before the web server waits for requests
+
+        // An open stream never ends on its own, so graceful shutdown would wait its full timeout for it.
+        String line;
+        do {
+            line = next();
+        } while (!line.equals(END_OF_STREAM));
+    }
+
+    @Test
     void techniciansCantOpenTheDashboardStream() throws Exception {
         var technician = TestTokens.token(c -> c.claim("roles", List.of("TECHNICIAN"))
                 .claim("technician_id", UUID.randomUUID().toString()));
@@ -118,11 +139,13 @@ class LiveUpdatesTests {
                 .header("Accept", "text/event-stream")
                 .build();
         var response = http.send(request, HttpResponse.BodyHandlers.ofInputStream());
+        body = response.body();
         reader = Thread.ofVirtual().start(() -> {
-            try (var in = new BufferedReader(new InputStreamReader(response.body(), StandardCharsets.UTF_8))) {
+            try (var in = new BufferedReader(new InputStreamReader(body, StandardCharsets.UTF_8))) {
                 for (String line; (line = in.readLine()) != null; ) {
                     lines.add(line);
                 }
+                lines.add(END_OF_STREAM);
             } catch (Exception closed) {
                 // the test is over
             }
