@@ -11,6 +11,8 @@ import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.event.ContextClosedEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.http.MediaType;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -89,6 +91,17 @@ class LiveUpdates {
                 .values()
                 .forEach(open ->
                         open.forEach(emitter -> send(emitter, SseEmitter.event().comment("keep-alive"))));
+    }
+
+    /**
+     * Ends every open stream when the app starts shutting down. Context-closed comes before the web server's
+     * graceful shutdown, which waits for active requests: an open stream never finishes on its own, so without
+     * this every restart and deploy waited the full shutdown timeout (30 s). Browsers reconnect after the retry
+     * time, to whichever instance is still up.
+     */
+    @EventListener(ContextClosedEvent.class)
+    void closeAll() {
+        dashboards.values().forEach(open -> open.forEach(SseEmitter::complete));
     }
 
     private void send(SseEmitter emitter, SseEmitter.SseEventBuilder event) {
