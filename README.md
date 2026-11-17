@@ -102,7 +102,7 @@ Stack: Spring Boot 4.1, Spring Modulith 2.1, Hibernate 7, Flyway, PostgreSQL 17 
 
 - Decisions: [docs/adr](docs/adr) (one per significant choice, with the alternatives)
 - Diagrams: [context map](docs/diagrams/context-map.md), [ERD](docs/diagrams/erd.md), [lifecycle](docs/diagrams/work-order-lifecycle.md), [upload flow](docs/diagrams/attachment-upload.md)
-- Measurements: [docs/perf](docs/perf)
+- Measurements: [docs/perf](docs/perf), [AI limits and model behaviour](docs/ai-limits.md)
 - Operations: [docs/failure-modes.md](docs/failure-modes.md)
 - Domain: [event storming](docs/domain/event-storming.md), [glossary](docs/glossary.md)
 
@@ -140,6 +140,7 @@ Optional sample data (3 companies, 50,000 technicians across Bangladesh, 30 work
 docker compose -f infra/compose/docker-compose.yml exec -T postgres psql -U dispatch -d dispatch -v ON_ERROR_STOP=1 < infra/seed/dev-seed.sql
 ```
 
+- AI (Phase 3): put a Gemini key from Google AI Studio in `.env` as `GEMINI_API_KEY` and start the app with it exported (`set -a; . ../.env; set +a`). Without it everything else works; only AI calls fail. Free-tier limits and measured behaviour: [docs/ai-limits.md](docs/ai-limits.md)
 - Dispatcher web app: `cd web && npm install && npm run dev`, then http://localhost:5173 (sign in as `dispatcher.meghna` / `password`)
 - Health: http://localhost:8080/actuator/health
 - API docs: http://localhost:8080/swagger-ui/index.html (click **Authorize**, log in as a test user below)
