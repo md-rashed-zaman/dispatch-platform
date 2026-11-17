@@ -45,7 +45,7 @@ public class TechnicianProfiles {
     public TechnicianProfile update(UUID technicianId, UpdateTechnicianProfileRequest request) {
         var technician =
                 technicians.findById(technicianId).orElseThrow(() -> new NotFoundException("Technician", technicianId));
-        technician.updateProfile(request.skills(), request.serviceRadiusKm());
+        technician.updateProfile(request.skills(), request.serviceRadiusKm(), request.bio());
         return TechnicianProfile.of(technicians.save(technician)); // publishes TechnicianUpdated
     }
 

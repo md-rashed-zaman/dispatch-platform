@@ -21,4 +21,14 @@ class OutboxTopics {
                 .replicas(replicas)
                 .build();
     }
+
+    @Bean
+    NewTopic technicianEvents(
+            @Value("${dispatch.outbox.partitions:6}") int partitions,
+            @Value("${dispatch.outbox.replicas:1}") int replicas) {
+        return TopicBuilder.name(Topics.TECHNICIAN_EVENTS)
+                .partitions(partitions)
+                .replicas(replicas)
+                .build();
+    }
 }

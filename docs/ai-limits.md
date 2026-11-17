@@ -43,6 +43,7 @@ Same short prompt, plain `curl` to `generateContent`:
 | Structured output (`responseJsonSchema`) | Valid JSON matching the schema, 14 + 48 tokens |
 | Spring AI `ChatClient`, first call in a fresh JVM | 9.4 s (client start-up plus the call) |
 | Embeddings, cosine similarity | "Printer shows error E05" vs "office printer is not printing" **0.66**; vs "CCTV camera has no signal" **0.55** |
+| Embeddings, a batch of 60 texts, then another within the minute (step 3.4) | First 200 in 2.1 s; second **429** `EmbedContentRequestsPerMinute…FreeTier` = 100: **every text in a batch counts as one request**. So the free tier embeds 100 texts a minute and, by the same count, 1,000 a day |
 | Temperature 0, same prompt 3 times | 3 different skill codes (`printer-repair`, `canon-printer-e05-error`, `canon-error-e05`) |
 
 ## What this means for the design
@@ -53,6 +54,8 @@ Same short prompt, plain `curl` to `generateContent`:
 4. **Temperature 0 does not mean the same answer.** Never let the model invent identifiers: give it the closed list (the tenant's skill codes) and validate the reply like any untrusted input (step 3.3).
 5. **Embeddings separate meaning, but not by much.** 0.66 vs 0.55 is a small gap: thresholds must be tuned on real examples, not guessed.
 6. **Latency is seconds, not milliseconds.** AI calls never sit on a hot path the user waits for without feedback; they run async or behind a clear "thinking" state.
+
+For embeddings that means: re-embedding 50,000 technician profiles takes about 55 days on the free tier (900 a day, leaving room for work orders) and minutes on a paid tier. Matching handles it by design: a paced backfill, and ranking without the semantic part for technicians not embedded yet (ADR 0013).
 
 ## How to re-measure
 

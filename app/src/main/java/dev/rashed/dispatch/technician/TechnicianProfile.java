@@ -12,6 +12,7 @@ public record TechnicianProfile(
         List<String> skills,
         int serviceRadiusKm,
         @Nullable BigDecimal rating,
+        @Nullable String bio,
         TechnicianStatus status) {
 
     static TechnicianProfile of(Technician technician) {
@@ -21,6 +22,7 @@ public record TechnicianProfile(
                 technician.skills().stream().map(s -> s.code()).sorted().toList(),
                 technician.serviceRadiusKm(),
                 technician.rating(),
+                technician.bio(),
                 technician.status());
     }
 }

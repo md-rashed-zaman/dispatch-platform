@@ -66,6 +66,9 @@ spring:
       hibernate:
         default_batch_fetch_size: 50
   ai:
+    model:
+      embedding:
+        text: google-genai
     google:
       genai:
         # From the environment only (.env locally, a secret in deployment), never in a file in git.
@@ -74,6 +77,9 @@ spring:
         api-key: ${GEMINI_API_KEY:not-set}
         chat:
           model: gemini-flash-lite-latest   # default only; the AI gateway picks the model for each call
+        embedding:
+          text:
+            model: gemini-embedding-001
     retry:
       # The AI gateway owns retries (ADR 0012). Spring AI's own default is 10 attempts with growing pauses,
       # hidden inside one call.
@@ -157,12 +163,35 @@ dispatch:
         requests-per-minute: 12
         input-price-per-million: 0.10
         output-price-per-million: 0.40
+      gemini-embedding-001:           # quota 100 a minute and 1,000 a day, counting each text in a batch
+        requests-per-minute: 90       # texts, not calls
+        input-price-per-million: 0.15
+        output-price-per-million: 0
     features:
       skill-suggestions: [gemini-flash-lite-latest, gemini-3.1-flash-lite]
       intake: [gemini-flash-lite-latest, gemini-3.1-flash-lite]
+    embedding:
+      model: gemini-embedding-001     # stored with each vector: a new model means re-embedding everyone
+      dimensions: 768                 # of 3,072: a quarter of the storage, nearly the same quality (Google's guidance)
     replay:
       mode: ${AI_REPLAY_MODE:off}     # off | record | replay (tests and evals; replay never calls the provider)
       directory: ${AI_REPLAY_DIR:ai-replay}
+  matching:
+    strategy: hybrid                  # hybrid | tags (the nearest with every required skill, Phase 1)
+    pool-size: 200                    # nearest technicians scored per work order
+    min-skill-coverage: 0.5           # a candidate has at least half the required skills
+    # Relative weights, chosen on the matching eval (evals/results/matching.md): 0.78 precision@5 there. Heavier
+    # semantic weights score higher on that eval (0.87 at 0.6) but would let travel distance stop mattering.
+    weights:
+      semantic: 0.5
+      skills: 0.2
+      distance: 0.15
+      rating: 0.1
+      reliability: 0.05
+    backfill:
+      interval: PT65S                 # one batch per round, so at most 90 texts a minute
+      batch-size: 90
+      daily-limit: 900                # of the free tier's 1,000 a day, leaving room for work orders
   instance-name: ${INSTANCE_NAME:${HOSTNAME:local}}   # in logs, to see which instance did what
   web:
     base-url: ${WEB_BASE_URL:http://localhost:5173}   # the dashboard, for links in emails

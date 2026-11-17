@@ -1,4 +1,4 @@
--- Local development data: 3 client companies, 50,000 technicians across Bangladesh and 30 draft work
+-- Local development data: 3 client companies, 50,000 technicians (most with a bio) across Bangladesh and 30 draft work
 -- orders around Dhaka and Chattogram. Wipes existing data first. Never run against production.
 -- 50,000 technicians make query plans realistic (docs/perf/geo-search.md); it takes a few seconds.
 --
@@ -52,11 +52,49 @@ CROSS JOIN LATERAL (
   SELECT * FROM (SELECT city.*, sum(share) OVER (ORDER BY share DESC, name) AS upto FROM city) ranked
   WHERE g % 100 < upto ORDER BY upto LIMIT 1) c;
 
+-- Bios for about 70% of technicians: years of experience and a specialty of their first skill, sometimes a
+-- second line from another skill. Matching embeds skills and bio (step 3.4).
+CREATE TEMP TABLE specialty (skill TEXT, phrase TEXT) ON COMMIT DROP;
+INSERT INTO specialty VALUES
+  ('printer', 'HP and Canon laser printers and photocopiers'),
+  ('printer', 'office printers: toner, paper jams and network printing'),
+  ('printer', 'receipt printers and large-format plotters'),
+  ('networking', 'office LAN cabling, switches and Wi-Fi'),
+  ('networking', 'routers, firewalls and branch VPN links'),
+  ('networking', 'fibre and broadband installation'),
+  ('pos-terminal', 'card machines (Verifone, Ingenico) and payment terminals'),
+  ('pos-terminal', 'shop POS systems, barcode scanners and receipt printers'),
+  ('cctv', 'IP cameras, DVR and NVR setup and repair'),
+  ('cctv', 'CCTV for bank vaults, ATM booths and warehouses'),
+  ('electrical', 'office wiring, sockets and distribution boards'),
+  ('electrical', 'industrial electrical maintenance and earthing'),
+  ('ac-repair', 'split AC servicing, gas refills and water leaks'),
+  ('ac-repair', 'central AC and server room cooling'),
+  ('atm', 'ATM cash dispensers and card readers (NCR, Diebold)'),
+  ('atm', 'ATM booth maintenance, cassette jams and screen faults'),
+  ('solar', 'rooftop solar panels, inverters and batteries'),
+  ('solar', 'solar home systems for shops and offices'),
+  ('generator', 'diesel generators and automatic changeover switches'),
+  ('generator', 'generator servicing for factories and banks'),
+  ('access-control', 'card access doors, biometric attendance and turnstiles'),
+  ('access-control', 'door locks, readers and access control panels');
+
+UPDATE technician t
+SET bio = format('%s with %s.%s',
+                 CASE WHEN abs(hashtext(t.id::TEXT)) % 15 = 0 THEN '1 year' ELSE 1 + abs(hashtext(t.id::TEXT)) % 15 || ' years' END,
+                 first.phrase,
+                 CASE WHEN second.phrase IS NULL THEN '' ELSE ' Also ' || second.phrase || '.' END)
+FROM technician src
+CROSS JOIN LATERAL (SELECT phrase FROM specialty WHERE skill = src.skills[1] AND src.id IS NOT NULL ORDER BY random() LIMIT 1) first
+LEFT JOIN LATERAL (SELECT phrase FROM specialty WHERE skill = src.skills[2] AND src.id IS NOT NULL ORDER BY random() LIMIT 1) second ON true
+WHERE t.id = src.id AND abs(hashtext(src.id::TEXT)) % 10 < 7;
+
 -- Fixed id: the Keycloak user tech.rahim carries it as the technician_id claim. Lives in Gulshan, so
 -- work orders published nearby are offered to this technician.
-INSERT INTO technician (id, full_name, phone, skills, home_latitude, home_longitude, service_radius_km, rating, status)
+INSERT INTO technician (id, full_name, phone, skills, home_latitude, home_longitude, service_radius_km, rating, status, bio)
 VALUES ('01930000-0000-7000-8000-0000000000a1', 'Rahim Uddin', '+8801900000001',
-        '{cctv,networking,pos-terminal,printer}', 23.7925, 90.4125, 30, 4.80, 'VERIFIED');
+        '{cctv,networking,pos-terminal,printer}', 23.7925, 90.4125, 30, 4.80, 'VERIFIED',
+        '12 years with HP and Canon printers, card machines and branch networks. Also CCTV for bank vaults.');
 
 CREATE TEMP TABLE seeded_work_order ON COMMIT DROP AS
 SELECT gen_random_uuid() AS id, g FROM generate_series(1, 30) g;

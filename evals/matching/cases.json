@@ -1,0 +1,1895 @@
+{
+ "site": {
+  "latitude": 23.0,
+  "longitude": 90.0
+ },
+ "technicians": [
+  {
+   "name": "Karim Uddin 01",
+   "skills": [
+    "printer"
+   ],
+   "bio": "9 years with Canon and Ricoh photocopiers: drums, fusers and paper feed.",
+   "specialty": "canon-copier",
+   "distanceKm": 17.2,
+   "bearing": 202,
+   "rating": 4.52
+  },
+  {
+   "name": "Sumon Uddin 02",
+   "skills": [
+    "printer"
+   ],
+   "bio": "5 years with Canon and Ricoh photocopiers: drums, fusers and paper feed.",
+   "specialty": "canon-copier",
+   "distanceKm": 15.3,
+   "bearing": 48,
+   "rating": 4.2
+  },
+  {
+   "name": "Nasrin Uddin 03",
+   "skills": [
+    "printer"
+   ],
+   "bio": "4 years with Canon and Ricoh photocopiers: drums, fusers and paper feed.",
+   "specialty": "canon-copier",
+   "distanceKm": 16.6,
+   "bearing": 109,
+   "rating": 3.84
+  },
+  {
+   "name": "Tanvir Uddin 04",
+   "skills": [
+    "printer"
+   ],
+   "bio": "10 years with Canon and Ricoh photocopiers: drums, fusers and paper feed.",
+   "specialty": "canon-copier",
+   "distanceKm": 9.3,
+   "bearing": 123,
+   "rating": 3.9
+  },
+  {
+   "name": "Farhana Uddin 05",
+   "skills": [
+    "printer"
+   ],
+   "bio": "10 years with Canon and Ricoh photocopiers: drums, fusers and paper feed.",
+   "specialty": "canon-copier",
+   "distanceKm": 3.9,
+   "bearing": 289,
+   "rating": 3.94
+  },
+  {
+   "name": "Jamal Uddin 06",
+   "skills": [
+    "printer"
+   ],
+   "bio": "7 years with thermal receipt printers and label printers in shops.",
+   "specialty": "receipt-printer",
+   "distanceKm": 12.5,
+   "bearing": 298,
+   "rating": 4.84
+  },
+  {
+   "name": "Rupa Uddin 07",
+   "skills": [
+    "printer"
+   ],
+   "bio": "13 years with thermal receipt printers and label printers in shops.",
+   "specialty": "receipt-printer",
+   "distanceKm": 11.8,
+   "bearing": 25,
+   "rating": 4.87
+  },
+  {
+   "name": "Shakil Uddin 08",
+   "skills": [
+    "printer"
+   ],
+   "bio": "4 years with thermal receipt printers and label printers in shops.",
+   "specialty": "receipt-printer",
+   "distanceKm": 11.3,
+   "bearing": 68,
+   "rating": 4.12
+  },
+  {
+   "name": "Mitu Uddin 09",
+   "skills": [
+    "printer"
+   ],
+   "bio": "6 years with thermal receipt printers and label printers in shops.",
+   "specialty": "receipt-printer",
+   "distanceKm": 11.1,
+   "bearing": 292,
+   "rating": 4.14
+  },
+  {
+   "name": "Arif Uddin 10",
+   "skills": [
+    "printer"
+   ],
+   "bio": "14 years with thermal receipt printers and label printers in shops.",
+   "specialty": "receipt-printer",
+   "distanceKm": 5.7,
+   "bearing": 297,
+   "rating": 4.43
+  },
+  {
+   "name": "Lima Uddin 11",
+   "skills": [
+    "printer"
+   ],
+   "bio": "7 years with HP LaserJet printers, toner and network printing.",
+   "specialty": "hp-laser",
+   "distanceKm": 8.6,
+   "bearing": 280,
+   "rating": 4.58
+  },
+  {
+   "name": "Rahim Hossain 12",
+   "skills": [
+    "printer"
+   ],
+   "bio": "13 years with HP LaserJet printers, toner and network printing.",
+   "specialty": "hp-laser",
+   "distanceKm": 3.9,
+   "bearing": 105,
+   "rating": 4.35
+  },
+  {
+   "name": "Karim Hossain 13",
+   "skills": [
+    "printer"
+   ],
+   "bio": "12 years with HP LaserJet printers, toner and network printing.",
+   "specialty": "hp-laser",
+   "distanceKm": 9.4,
+   "bearing": 160,
+   "rating": 4.31
+  },
+  {
+   "name": "Sumon Hossain 14",
+   "skills": [
+    "printer"
+   ],
+   "bio": "11 years with HP LaserJet printers, toner and network printing.",
+   "specialty": "hp-laser",
+   "distanceKm": 8.4,
+   "bearing": 127,
+   "rating": 4.67
+  },
+  {
+   "name": "Nasrin Hossain 15",
+   "skills": [
+    "printer"
+   ],
+   "bio": "15 years with HP LaserJet printers, toner and network printing.",
+   "specialty": "hp-laser",
+   "distanceKm": 14.7,
+   "bearing": 41,
+   "rating": 4.43
+  },
+  {
+   "name": "Tanvir Hossain 16",
+   "skills": [
+    "access-control",
+    "printer"
+   ],
+   "bio": "9 years, mostly card access doors, readers and turnstiles.",
+   "specialty": "generalist",
+   "distanceKm": 2.7,
+   "bearing": 229,
+   "rating": 4.12
+  },
+  {
+   "name": "Farhana Hossain 17",
+   "skills": [
+    "cctv",
+    "printer"
+   ],
+   "bio": "3 years, mostly IP cameras and NVR recording systems.",
+   "specialty": "generalist",
+   "distanceKm": 1.8,
+   "bearing": 84,
+   "rating": 4.63
+  },
+  {
+   "name": "Jamal Hossain 18",
+   "skills": [
+    "ac-repair",
+    "printer"
+   ],
+   "bio": "9 years, mostly split air conditioners: gas refills, water leaks and servicing.",
+   "specialty": "generalist",
+   "distanceKm": 1.6,
+   "bearing": 342,
+   "rating": 3.89
+  },
+  {
+   "name": "Rupa Hossain 19",
+   "skills": [
+    "networking"
+   ],
+   "bio": "12 years with office Wi-Fi access points, coverage surveys and LAN cabling.",
+   "specialty": "wifi",
+   "distanceKm": 11.6,
+   "bearing": 160,
+   "rating": 4.17
+  },
+  {
+   "name": "Shakil Hossain 20",
+   "skills": [
+    "networking"
+   ],
+   "bio": "9 years with office Wi-Fi access points, coverage surveys and LAN cabling.",
+   "specialty": "wifi",
+   "distanceKm": 11.9,
+   "bearing": 296,
+   "rating": 4.68
+  },
+  {
+   "name": "Mitu Hossain 21",
+   "skills": [
+    "networking"
+   ],
+   "bio": "5 years with office Wi-Fi access points, coverage surveys and LAN cabling.",
+   "specialty": "wifi",
+   "distanceKm": 15.6,
+   "bearing": 138,
+   "rating": 4.32
+  },
+  {
+   "name": "Arif Hossain 22",
+   "skills": [
+    "networking"
+   ],
+   "bio": "14 years with office Wi-Fi access points, coverage surveys and LAN cabling.",
+   "specialty": "wifi",
+   "distanceKm": 4.0,
+   "bearing": 359,
+   "rating": 4.14
+  },
+  {
+   "name": "Lima Hossain 23",
+   "skills": [
+    "networking"
+   ],
+   "bio": "13 years with office Wi-Fi access points, coverage surveys and LAN cabling.",
+   "specialty": "wifi",
+   "distanceKm": 17.9,
+   "bearing": 228,
+   "rating": 4.11
+  },
+  {
+   "name": "Rahim Ahmed 24",
+   "skills": [
+    "networking"
+   ],
+   "bio": "10 years with fibre optic splicing, ONT installation and ISP links.",
+   "specialty": "fibre",
+   "distanceKm": 16.3,
+   "bearing": 177,
+   "rating": 3.82
+  },
+  {
+   "name": "Karim Ahmed 25",
+   "skills": [
+    "networking"
+   ],
+   "bio": "11 years with fibre optic splicing, ONT installation and ISP links.",
+   "specialty": "fibre",
+   "distanceKm": 8.3,
+   "bearing": 312,
+   "rating": 3.93
+  },
+  {
+   "name": "Sumon Ahmed 26",
+   "skills": [
+    "networking"
+   ],
+   "bio": "4 years with fibre optic splicing, ONT installation and ISP links.",
+   "specialty": "fibre",
+   "distanceKm": 6.3,
+   "bearing": 147,
+   "rating": 3.94
+  },
+  {
+   "name": "Nasrin Ahmed 27",
+   "skills": [
+    "networking"
+   ],
+   "bio": "7 years with fibre optic splicing, ONT installation and ISP links.",
+   "specialty": "fibre",
+   "distanceKm": 9.0,
+   "bearing": 254,
+   "rating": 3.89
+  },
+  {
+   "name": "Tanvir Ahmed 28",
+   "skills": [
+    "networking"
+   ],
+   "bio": "11 years with fibre optic splicing, ONT installation and ISP links.",
+   "specialty": "fibre",
+   "distanceKm": 9.0,
+   "bearing": 142,
+   "rating": 4.77
+  },
+  {
+   "name": "Farhana Ahmed 29",
+   "skills": [
+    "networking"
+   ],
+   "bio": "10 years with routers, firewalls and branch VPN tunnels.",
+   "specialty": "router-vpn",
+   "distanceKm": 16.0,
+   "bearing": 142,
+   "rating": 4.58
+  },
+  {
+   "name": "Jamal Ahmed 30",
+   "skills": [
+    "networking"
+   ],
+   "bio": "9 years with routers, firewalls and branch VPN tunnels.",
+   "specialty": "router-vpn",
+   "distanceKm": 13.2,
+   "bearing": 194,
+   "rating": 4.85
+  },
+  {
+   "name": "Rupa Ahmed 31",
+   "skills": [
+    "networking"
+   ],
+   "bio": "6 years with routers, firewalls and branch VPN tunnels.",
+   "specialty": "router-vpn",
+   "distanceKm": 4.2,
+   "bearing": 77,
+   "rating": 4.06
+  },
+  {
+   "name": "Shakil Ahmed 32",
+   "skills": [
+    "networking"
+   ],
+   "bio": "7 years with routers, firewalls and branch VPN tunnels.",
+   "specialty": "router-vpn",
+   "distanceKm": 3.2,
+   "bearing": 301,
+   "rating": 4.0
+  },
+  {
+   "name": "Mitu Ahmed 33",
+   "skills": [
+    "networking"
+   ],
+   "bio": "8 years with routers, firewalls and branch VPN tunnels.",
+   "specialty": "router-vpn",
+   "distanceKm": 3.1,
+   "bearing": 214,
+   "rating": 4.39
+  },
+  {
+   "name": "Arif Ahmed 34",
+   "skills": [
+    "generator",
+    "networking"
+   ],
+   "bio": "4 years, mostly diesel generators and automatic changeover switches.",
+   "specialty": "generalist",
+   "distanceKm": 2.2,
+   "bearing": 263,
+   "rating": 4.85
+  },
+  {
+   "name": "Lima Ahmed 35",
+   "skills": [
+    "networking",
+    "printer"
+   ],
+   "bio": "9 years, mostly Canon and Ricoh photocopiers: drums, fusers and paper feed.",
+   "specialty": "generalist",
+   "distanceKm": 2.7,
+   "bearing": 348,
+   "rating": 4.68
+  },
+  {
+   "name": "Rahim Akter 36",
+   "skills": [
+    "networking",
+    "pos-terminal"
+   ],
+   "bio": "8 years, mostly card machines (Verifone, Ingenico) and payment terminals.",
+   "specialty": "generalist",
+   "distanceKm": 1.5,
+   "bearing": 53,
+   "rating": 4.33
+  },
+  {
+   "name": "Karim Akter 37",
+   "skills": [
+    "cctv"
+   ],
+   "bio": "10 years with IP cameras and NVR recording systems.",
+   "specialty": "ip-camera",
+   "distanceKm": 3.9,
+   "bearing": 34,
+   "rating": 4.88
+  },
+  {
+   "name": "Sumon Akter 38",
+   "skills": [
+    "cctv"
+   ],
+   "bio": "11 years with IP cameras and NVR recording systems.",
+   "specialty": "ip-camera",
+   "distanceKm": 5.4,
+   "bearing": 174,
+   "rating": 4.46
+  },
+  {
+   "name": "Nasrin Akter 39",
+   "skills": [
+    "cctv"
+   ],
+   "bio": "5 years with IP cameras and NVR recording systems.",
+   "specialty": "ip-camera",
+   "distanceKm": 3.0,
+   "bearing": 77,
+   "rating": 4.39
+  },
+  {
+   "name": "Tanvir Akter 40",
+   "skills": [
+    "cctv"
+   ],
+   "bio": "9 years with IP cameras and NVR recording systems.",
+   "specialty": "ip-camera",
+   "distanceKm": 12.2,
+   "bearing": 36,
+   "rating": 4.76
+  },
+  {
+   "name": "Farhana Akter 41",
+   "skills": [
+    "cctv"
+   ],
+   "bio": "13 years with IP cameras and NVR recording systems.",
+   "specialty": "ip-camera",
+   "distanceKm": 8.6,
+   "bearing": 324,
+   "rating": 4.08
+  },
+  {
+   "name": "Jamal Akter 42",
+   "skills": [
+    "cctv"
+   ],
+   "bio": "9 years with CCTV for bank vaults and ATM booths, tamper alarms.",
+   "specialty": "vault-cctv",
+   "distanceKm": 12.0,
+   "bearing": 242,
+   "rating": 3.94
+  },
+  {
+   "name": "Rupa Akter 43",
+   "skills": [
+    "cctv"
+   ],
+   "bio": "11 years with CCTV for bank vaults and ATM booths, tamper alarms.",
+   "specialty": "vault-cctv",
+   "distanceKm": 17.9,
+   "bearing": 238,
+   "rating": 4.33
+  },
+  {
+   "name": "Shakil Akter 44",
+   "skills": [
+    "cctv"
+   ],
+   "bio": "8 years with CCTV for bank vaults and ATM booths, tamper alarms.",
+   "specialty": "vault-cctv",
+   "distanceKm": 4.3,
+   "bearing": 52,
+   "rating": 4.62
+  },
+  {
+   "name": "Mitu Akter 45",
+   "skills": [
+    "cctv"
+   ],
+   "bio": "15 years with CCTV for bank vaults and ATM booths, tamper alarms.",
+   "specialty": "vault-cctv",
+   "distanceKm": 7.0,
+   "bearing": 354,
+   "rating": 3.98
+  },
+  {
+   "name": "Arif Akter 46",
+   "skills": [
+    "cctv"
+   ],
+   "bio": "4 years with CCTV for bank vaults and ATM booths, tamper alarms.",
+   "specialty": "vault-cctv",
+   "distanceKm": 6.1,
+   "bearing": 270,
+   "rating": 4.2
+  },
+  {
+   "name": "Lima Akter 47",
+   "skills": [
+    "access-control",
+    "cctv"
+   ],
+   "bio": "2 years, mostly card access doors, readers and turnstiles.",
+   "specialty": "generalist",
+   "distanceKm": 2.4,
+   "bearing": 152,
+   "rating": 4.88
+  },
+  {
+   "name": "Rahim Islam 48",
+   "skills": [
+    "cctv",
+    "networking"
+   ],
+   "bio": "6 years, mostly office Wi-Fi access points, coverage surveys and LAN cabling.",
+   "specialty": "generalist",
+   "distanceKm": 1.8,
+   "bearing": 85,
+   "rating": 4.19
+  },
+  {
+   "name": "Karim Islam 49",
+   "skills": [
+    "atm",
+    "cctv"
+   ],
+   "bio": "10 years, mostly ATM cash dispensers and cassette jams (NCR, Diebold).",
+   "specialty": "generalist",
+   "distanceKm": 1.9,
+   "bearing": 257,
+   "rating": 4.16
+  },
+  {
+   "name": "Sumon Islam 50",
+   "skills": [
+    "ac-repair"
+   ],
+   "bio": "7 years with split air conditioners: gas refills, water leaks and servicing.",
+   "specialty": "split-ac",
+   "distanceKm": 12.2,
+   "bearing": 99,
+   "rating": 4.69
+  },
+  {
+   "name": "Nasrin Islam 51",
+   "skills": [
+    "ac-repair"
+   ],
+   "bio": "10 years with split air conditioners: gas refills, water leaks and servicing.",
+   "specialty": "split-ac",
+   "distanceKm": 14.1,
+   "bearing": 116,
+   "rating": 4.02
+  },
+  {
+   "name": "Tanvir Islam 52",
+   "skills": [
+    "ac-repair"
+   ],
+   "bio": "11 years with split air conditioners: gas refills, water leaks and servicing.",
+   "specialty": "split-ac",
+   "distanceKm": 8.3,
+   "bearing": 14,
+   "rating": 4.89
+  },
+  {
+   "name": "Farhana Islam 53",
+   "skills": [
+    "ac-repair"
+   ],
+   "bio": "8 years with split air conditioners: gas refills, water leaks and servicing.",
+   "specialty": "split-ac",
+   "distanceKm": 10.1,
+   "bearing": 99,
+   "rating": 4.56
+  },
+  {
+   "name": "Jamal Islam 54",
+   "skills": [
+    "ac-repair"
+   ],
+   "bio": "9 years with split air conditioners: gas refills, water leaks and servicing.",
+   "specialty": "split-ac",
+   "distanceKm": 9.7,
+   "bearing": 178,
+   "rating": 4.85
+  },
+  {
+   "name": "Rupa Islam 55",
+   "skills": [
+    "ac-repair"
+   ],
+   "bio": "9 years with server room precision cooling and central AC.",
+   "specialty": "server-cooling",
+   "distanceKm": 4.2,
+   "bearing": 52,
+   "rating": 4.05
+  },
+  {
+   "name": "Shakil Islam 56",
+   "skills": [
+    "ac-repair"
+   ],
+   "bio": "7 years with server room precision cooling and central AC.",
+   "specialty": "server-cooling",
+   "distanceKm": 8.1,
+   "bearing": 247,
+   "rating": 4.49
+  },
+  {
+   "name": "Mitu Islam 57",
+   "skills": [
+    "ac-repair"
+   ],
+   "bio": "13 years with server room precision cooling and central AC.",
+   "specialty": "server-cooling",
+   "distanceKm": 15.6,
+   "bearing": 245,
+   "rating": 4.8
+  },
+  {
+   "name": "Arif Islam 58",
+   "skills": [
+    "ac-repair"
+   ],
+   "bio": "9 years with server room precision cooling and central AC.",
+   "specialty": "server-cooling",
+   "distanceKm": 15.0,
+   "bearing": 43,
+   "rating": 4.72
+  },
+  {
+   "name": "Lima Islam 59",
+   "skills": [
+    "ac-repair"
+   ],
+   "bio": "5 years with server room precision cooling and central AC.",
+   "specialty": "server-cooling",
+   "distanceKm": 16.6,
+   "bearing": 102,
+   "rating": 4.33
+  },
+  {
+   "name": "Rahim Rahman 60",
+   "skills": [
+    "ac-repair",
+    "cctv"
+   ],
+   "bio": "8 years, mostly IP cameras and NVR recording systems.",
+   "specialty": "generalist",
+   "distanceKm": 2.5,
+   "bearing": 170,
+   "rating": 3.9
+  },
+  {
+   "name": "Karim Rahman 61",
+   "skills": [
+    "ac-repair",
+    "pos-terminal"
+   ],
+   "bio": "9 years, mostly card machines (Verifone, Ingenico) and payment terminals.",
+   "specialty": "generalist",
+   "distanceKm": 1.5,
+   "bearing": 43,
+   "rating": 4.6
+  },
+  {
+   "name": "Sumon Rahman 62",
+   "skills": [
+    "ac-repair",
+    "cctv"
+   ],
+   "bio": "4 years, mostly IP cameras and NVR recording systems.",
+   "specialty": "generalist",
+   "distanceKm": 0.6,
+   "bearing": 302,
+   "rating": 4.8
+  },
+  {
+   "name": "Nasrin Rahman 63",
+   "skills": [
+    "atm"
+   ],
+   "bio": "14 years with ATM cash dispensers and cassette jams (NCR, Diebold).",
+   "specialty": "atm-dispenser",
+   "distanceKm": 5.2,
+   "bearing": 305,
+   "rating": 4.88
+  },
+  {
+   "name": "Tanvir Rahman 64",
+   "skills": [
+    "atm"
+   ],
+   "bio": "14 years with ATM cash dispensers and cassette jams (NCR, Diebold).",
+   "specialty": "atm-dispenser",
+   "distanceKm": 17.1,
+   "bearing": 79,
+   "rating": 4.4
+  },
+  {
+   "name": "Farhana Rahman 65",
+   "skills": [
+    "atm"
+   ],
+   "bio": "6 years with ATM cash dispensers and cassette jams (NCR, Diebold).",
+   "specialty": "atm-dispenser",
+   "distanceKm": 3.3,
+   "bearing": 332,
+   "rating": 3.91
+  },
+  {
+   "name": "Jamal Rahman 66",
+   "skills": [
+    "atm"
+   ],
+   "bio": "15 years with ATM cash dispensers and cassette jams (NCR, Diebold).",
+   "specialty": "atm-dispenser",
+   "distanceKm": 17.0,
+   "bearing": 222,
+   "rating": 4.89
+  },
+  {
+   "name": "Rupa Rahman 67",
+   "skills": [
+    "atm"
+   ],
+   "bio": "7 years with ATM cash dispensers and cassette jams (NCR, Diebold).",
+   "specialty": "atm-dispenser",
+   "distanceKm": 15.4,
+   "bearing": 108,
+   "rating": 3.83
+  },
+  {
+   "name": "Shakil Rahman 68",
+   "skills": [
+    "atm"
+   ],
+   "bio": "7 years with ATM card readers, PIN pads and screens.",
+   "specialty": "atm-card-reader",
+   "distanceKm": 7.4,
+   "bearing": 123,
+   "rating": 4.64
+  },
+  {
+   "name": "Mitu Rahman 69",
+   "skills": [
+    "atm"
+   ],
+   "bio": "9 years with ATM card readers, PIN pads and screens.",
+   "specialty": "atm-card-reader",
+   "distanceKm": 6.9,
+   "bearing": 214,
+   "rating": 4.72
+  },
+  {
+   "name": "Arif Rahman 70",
+   "skills": [
+    "atm"
+   ],
+   "bio": "4 years with ATM card readers, PIN pads and screens.",
+   "specialty": "atm-card-reader",
+   "distanceKm": 16.7,
+   "bearing": 181,
+   "rating": 4.79
+  },
+  {
+   "name": "Lima Rahman 71",
+   "skills": [
+    "atm"
+   ],
+   "bio": "14 years with ATM card readers, PIN pads and screens.",
+   "specialty": "atm-card-reader",
+   "distanceKm": 11.8,
+   "bearing": 264,
+   "rating": 4.26
+  },
+  {
+   "name": "Rahim Khan 72",
+   "skills": [
+    "atm"
+   ],
+   "bio": "12 years with ATM card readers, PIN pads and screens.",
+   "specialty": "atm-card-reader",
+   "distanceKm": 5.0,
+   "bearing": 77,
+   "rating": 4.38
+  },
+  {
+   "name": "Karim Khan 73",
+   "skills": [
+    "atm",
+    "printer"
+   ],
+   "bio": "9 years, mostly Canon and Ricoh photocopiers: drums, fusers and paper feed.",
+   "specialty": "generalist",
+   "distanceKm": 2.4,
+   "bearing": 311,
+   "rating": 3.8
+  },
+  {
+   "name": "Sumon Khan 74",
+   "skills": [
+    "atm",
+    "cctv"
+   ],
+   "bio": "4 years, mostly IP cameras and NVR recording systems.",
+   "specialty": "generalist",
+   "distanceKm": 0.9,
+   "bearing": 316,
+   "rating": 4.6
+  },
+  {
+   "name": "Nasrin Khan 75",
+   "skills": [
+    "access-control",
+    "atm"
+   ],
+   "bio": "2 years, mostly card access doors, readers and turnstiles.",
+   "specialty": "generalist",
+   "distanceKm": 1.3,
+   "bearing": 265,
+   "rating": 4.38
+  },
+  {
+   "name": "Tanvir Khan 76",
+   "skills": [
+    "electrical"
+   ],
+   "bio": "11 years with office wiring, sockets and distribution boards.",
+   "specialty": "office-wiring",
+   "distanceKm": 14.8,
+   "bearing": 54,
+   "rating": 4.77
+  },
+  {
+   "name": "Farhana Khan 77",
+   "skills": [
+    "electrical"
+   ],
+   "bio": "4 years with office wiring, sockets and distribution boards.",
+   "specialty": "office-wiring",
+   "distanceKm": 6.7,
+   "bearing": 141,
+   "rating": 3.85
+  },
+  {
+   "name": "Jamal Khan 78",
+   "skills": [
+    "electrical"
+   ],
+   "bio": "5 years with office wiring, sockets and distribution boards.",
+   "specialty": "office-wiring",
+   "distanceKm": 10.6,
+   "bearing": 287,
+   "rating": 3.83
+  },
+  {
+   "name": "Rupa Khan 79",
+   "skills": [
+    "electrical"
+   ],
+   "bio": "5 years with office wiring, sockets and distribution boards.",
+   "specialty": "office-wiring",
+   "distanceKm": 9.6,
+   "bearing": 313,
+   "rating": 4.87
+  },
+  {
+   "name": "Shakil Khan 80",
+   "skills": [
+    "electrical"
+   ],
+   "bio": "13 years with office wiring, sockets and distribution boards.",
+   "specialty": "office-wiring",
+   "distanceKm": 10.7,
+   "bearing": 354,
+   "rating": 4.1
+  },
+  {
+   "name": "Mitu Khan 81",
+   "skills": [
+    "electrical"
+   ],
+   "bio": "12 years with factory three-phase motors, panels and earthing.",
+   "specialty": "industrial",
+   "distanceKm": 11.0,
+   "bearing": 244,
+   "rating": 4.36
+  },
+  {
+   "name": "Arif Khan 82",
+   "skills": [
+    "electrical"
+   ],
+   "bio": "7 years with factory three-phase motors, panels and earthing.",
+   "specialty": "industrial",
+   "distanceKm": 13.5,
+   "bearing": 132,
+   "rating": 4.82
+  },
+  {
+   "name": "Lima Khan 83",
+   "skills": [
+    "electrical"
+   ],
+   "bio": "7 years with factory three-phase motors, panels and earthing.",
+   "specialty": "industrial",
+   "distanceKm": 15.6,
+   "bearing": 70,
+   "rating": 4.26
+  },
+  {
+   "name": "Rahim Sarkar 84",
+   "skills": [
+    "electrical"
+   ],
+   "bio": "10 years with factory three-phase motors, panels and earthing.",
+   "specialty": "industrial",
+   "distanceKm": 9.6,
+   "bearing": 37,
+   "rating": 4.54
+  },
+  {
+   "name": "Karim Sarkar 85",
+   "skills": [
+    "electrical"
+   ],
+   "bio": "10 years with factory three-phase motors, panels and earthing.",
+   "specialty": "industrial",
+   "distanceKm": 4.1,
+   "bearing": 342,
+   "rating": 4.13
+  },
+  {
+   "name": "Sumon Sarkar 86",
+   "skills": [
+    "electrical",
+    "networking"
+   ],
+   "bio": "4 years, mostly office Wi-Fi access points, coverage surveys and LAN cabling.",
+   "specialty": "generalist",
+   "distanceKm": 2.8,
+   "bearing": 329,
+   "rating": 4.53
+  },
+  {
+   "name": "Nasrin Sarkar 87",
+   "skills": [
+    "cctv",
+    "electrical"
+   ],
+   "bio": "6 years, mostly IP cameras and NVR recording systems.",
+   "specialty": "generalist",
+   "distanceKm": 2.7,
+   "bearing": 239,
+   "rating": 4.04
+  },
+  {
+   "name": "Tanvir Sarkar 88",
+   "skills": [
+    "electrical",
+    "networking"
+   ],
+   "bio": "8 years, mostly office Wi-Fi access points, coverage surveys and LAN cabling.",
+   "specialty": "generalist",
+   "distanceKm": 2.7,
+   "bearing": 83,
+   "rating": 4.89
+  },
+  {
+   "name": "Farhana Sarkar 89",
+   "skills": [
+    "generator"
+   ],
+   "bio": "7 years with diesel generators and automatic changeover switches.",
+   "specialty": "diesel-gen",
+   "distanceKm": 5.4,
+   "bearing": 220,
+   "rating": 4.89
+  },
+  {
+   "name": "Jamal Sarkar 90",
+   "skills": [
+    "generator"
+   ],
+   "bio": "10 years with diesel generators and automatic changeover switches.",
+   "specialty": "diesel-gen",
+   "distanceKm": 8.1,
+   "bearing": 100,
+   "rating": 4.19
+  },
+  {
+   "name": "Rupa Sarkar 91",
+   "skills": [
+    "generator"
+   ],
+   "bio": "5 years with diesel generators and automatic changeover switches.",
+   "specialty": "diesel-gen",
+   "distanceKm": 13.8,
+   "bearing": 9,
+   "rating": 4.17
+  },
+  {
+   "name": "Shakil Sarkar 92",
+   "skills": [
+    "generator"
+   ],
+   "bio": "11 years with diesel generators and automatic changeover switches.",
+   "specialty": "diesel-gen",
+   "distanceKm": 9.6,
+   "bearing": 9,
+   "rating": 4.22
+  },
+  {
+   "name": "Mitu Sarkar 93",
+   "skills": [
+    "generator"
+   ],
+   "bio": "12 years with diesel generators and automatic changeover switches.",
+   "specialty": "diesel-gen",
+   "distanceKm": 12.4,
+   "bearing": 262,
+   "rating": 4.86
+  },
+  {
+   "name": "Arif Sarkar 94",
+   "skills": [
+    "generator",
+    "networking"
+   ],
+   "bio": "5 years, mostly office Wi-Fi access points, coverage surveys and LAN cabling.",
+   "specialty": "generalist",
+   "distanceKm": 2.9,
+   "bearing": 53,
+   "rating": 3.89
+  },
+  {
+   "name": "Lima Sarkar 95",
+   "skills": [
+    "atm",
+    "generator"
+   ],
+   "bio": "2 years, mostly ATM cash dispensers and cassette jams (NCR, Diebold).",
+   "specialty": "generalist",
+   "distanceKm": 2.8,
+   "bearing": 92,
+   "rating": 4.1
+  },
+  {
+   "name": "Rahim Uddin 96",
+   "skills": [
+    "cctv",
+    "generator"
+   ],
+   "bio": "8 years, mostly IP cameras and NVR recording systems.",
+   "specialty": "generalist",
+   "distanceKm": 2.6,
+   "bearing": 346,
+   "rating": 4.7
+  },
+  {
+   "name": "Karim Uddin 97",
+   "skills": [
+    "pos-terminal"
+   ],
+   "bio": "8 years with card machines (Verifone, Ingenico) and payment terminals.",
+   "specialty": "card-machine",
+   "distanceKm": 9.1,
+   "bearing": 274,
+   "rating": 4.81
+  },
+  {
+   "name": "Sumon Uddin 98",
+   "skills": [
+    "pos-terminal"
+   ],
+   "bio": "13 years with card machines (Verifone, Ingenico) and payment terminals.",
+   "specialty": "card-machine",
+   "distanceKm": 10.4,
+   "bearing": 167,
+   "rating": 3.9
+  },
+  {
+   "name": "Nasrin Uddin 99",
+   "skills": [
+    "pos-terminal"
+   ],
+   "bio": "4 years with card machines (Verifone, Ingenico) and payment terminals.",
+   "specialty": "card-machine",
+   "distanceKm": 15.0,
+   "bearing": 93,
+   "rating": 4.27
+  },
+  {
+   "name": "Tanvir Uddin 100",
+   "skills": [
+    "pos-terminal"
+   ],
+   "bio": "5 years with card machines (Verifone, Ingenico) and payment terminals.",
+   "specialty": "card-machine",
+   "distanceKm": 7.0,
+   "bearing": 8,
+   "rating": 4.5
+  },
+  {
+   "name": "Farhana Uddin 101",
+   "skills": [
+    "pos-terminal"
+   ],
+   "bio": "8 years with card machines (Verifone, Ingenico) and payment terminals.",
+   "specialty": "card-machine",
+   "distanceKm": 4.3,
+   "bearing": 113,
+   "rating": 3.87
+  },
+  {
+   "name": "Jamal Uddin 102",
+   "skills": [
+    "networking",
+    "pos-terminal"
+   ],
+   "bio": "9 years, mostly office Wi-Fi access points, coverage surveys and LAN cabling.",
+   "specialty": "generalist",
+   "distanceKm": 0.5,
+   "bearing": 283,
+   "rating": 4.26
+  },
+  {
+   "name": "Rupa Uddin 103",
+   "skills": [
+    "atm",
+    "pos-terminal"
+   ],
+   "bio": "11 years, mostly ATM cash dispensers and cassette jams (NCR, Diebold).",
+   "specialty": "generalist",
+   "distanceKm": 0.8,
+   "bearing": 269,
+   "rating": 4.58
+  },
+  {
+   "name": "Shakil Uddin 104",
+   "skills": [
+    "networking",
+    "pos-terminal"
+   ],
+   "bio": "4 years, mostly office Wi-Fi access points, coverage surveys and LAN cabling.",
+   "specialty": "generalist",
+   "distanceKm": 1.2,
+   "bearing": 92,
+   "rating": 4.02
+  },
+  {
+   "name": "Mitu Uddin 105",
+   "skills": [
+    "solar"
+   ],
+   "bio": "8 years with rooftop solar panels, inverters and batteries.",
+   "specialty": "rooftop-solar",
+   "distanceKm": 12.4,
+   "bearing": 271,
+   "rating": 4.64
+  },
+  {
+   "name": "Arif Uddin 106",
+   "skills": [
+    "solar"
+   ],
+   "bio": "8 years with rooftop solar panels, inverters and batteries.",
+   "specialty": "rooftop-solar",
+   "distanceKm": 9.7,
+   "bearing": 344,
+   "rating": 4.0
+  },
+  {
+   "name": "Lima Uddin 107",
+   "skills": [
+    "solar"
+   ],
+   "bio": "9 years with rooftop solar panels, inverters and batteries.",
+   "specialty": "rooftop-solar",
+   "distanceKm": 15.1,
+   "bearing": 128,
+   "rating": 3.84
+  },
+  {
+   "name": "Rahim Hossain 108",
+   "skills": [
+    "solar"
+   ],
+   "bio": "4 years with rooftop solar panels, inverters and batteries.",
+   "specialty": "rooftop-solar",
+   "distanceKm": 14.0,
+   "bearing": 282,
+   "rating": 4.88
+  },
+  {
+   "name": "Karim Hossain 109",
+   "skills": [
+    "solar"
+   ],
+   "bio": "12 years with rooftop solar panels, inverters and batteries.",
+   "specialty": "rooftop-solar",
+   "distanceKm": 10.1,
+   "bearing": 228,
+   "rating": 3.92
+  },
+  {
+   "name": "Sumon Hossain 110",
+   "skills": [
+    "generator",
+    "solar"
+   ],
+   "bio": "12 years, mostly diesel generators and automatic changeover switches.",
+   "specialty": "generalist",
+   "distanceKm": 1.7,
+   "bearing": 201,
+   "rating": 4.87
+  },
+  {
+   "name": "Nasrin Hossain 111",
+   "skills": [
+    "atm",
+    "solar"
+   ],
+   "bio": "5 years, mostly ATM cash dispensers and cassette jams (NCR, Diebold).",
+   "specialty": "generalist",
+   "distanceKm": 3.0,
+   "bearing": 175,
+   "rating": 4.02
+  },
+  {
+   "name": "Tanvir Hossain 112",
+   "skills": [
+    "cctv",
+    "solar"
+   ],
+   "bio": "8 years, mostly IP cameras and NVR recording systems.",
+   "specialty": "generalist",
+   "distanceKm": 3.0,
+   "bearing": 27,
+   "rating": 4.72
+  },
+  {
+   "name": "Farhana Hossain 113",
+   "skills": [
+    "access-control"
+   ],
+   "bio": "4 years with card access doors, readers and turnstiles.",
+   "specialty": "card-doors",
+   "distanceKm": 4.1,
+   "bearing": 130,
+   "rating": 4.27
+  },
+  {
+   "name": "Jamal Hossain 114",
+   "skills": [
+    "access-control"
+   ],
+   "bio": "4 years with card access doors, readers and turnstiles.",
+   "specialty": "card-doors",
+   "distanceKm": 4.3,
+   "bearing": 195,
+   "rating": 4.76
+  },
+  {
+   "name": "Rupa Hossain 115",
+   "skills": [
+    "access-control"
+   ],
+   "bio": "14 years with card access doors, readers and turnstiles.",
+   "specialty": "card-doors",
+   "distanceKm": 17.6,
+   "bearing": 306,
+   "rating": 4.07
+  },
+  {
+   "name": "Shakil Hossain 116",
+   "skills": [
+    "access-control"
+   ],
+   "bio": "8 years with card access doors, readers and turnstiles.",
+   "specialty": "card-doors",
+   "distanceKm": 3.7,
+   "bearing": 94,
+   "rating": 3.97
+  },
+  {
+   "name": "Mitu Hossain 117",
+   "skills": [
+    "access-control"
+   ],
+   "bio": "11 years with card access doors, readers and turnstiles.",
+   "specialty": "card-doors",
+   "distanceKm": 3.1,
+   "bearing": 186,
+   "rating": 4.86
+  },
+  {
+   "name": "Arif Hossain 118",
+   "skills": [
+    "access-control"
+   ],
+   "bio": "12 years with biometric attendance machines and fingerprint readers.",
+   "specialty": "biometric",
+   "distanceKm": 7.9,
+   "bearing": 17,
+   "rating": 4.86
+  },
+  {
+   "name": "Lima Hossain 119",
+   "skills": [
+    "access-control"
+   ],
+   "bio": "8 years with biometric attendance machines and fingerprint readers.",
+   "specialty": "biometric",
+   "distanceKm": 6.3,
+   "bearing": 93,
+   "rating": 3.8
+  },
+  {
+   "name": "Rahim Ahmed 120",
+   "skills": [
+    "access-control"
+   ],
+   "bio": "10 years with biometric attendance machines and fingerprint readers.",
+   "specialty": "biometric",
+   "distanceKm": 4.3,
+   "bearing": 142,
+   "rating": 4.35
+  },
+  {
+   "name": "Karim Ahmed 121",
+   "skills": [
+    "access-control"
+   ],
+   "bio": "7 years with biometric attendance machines and fingerprint readers.",
+   "specialty": "biometric",
+   "distanceKm": 6.7,
+   "bearing": 2,
+   "rating": 3.9
+  },
+  {
+   "name": "Sumon Ahmed 122",
+   "skills": [
+    "access-control"
+   ],
+   "bio": "5 years with biometric attendance machines and fingerprint readers.",
+   "specialty": "biometric",
+   "distanceKm": 5.2,
+   "bearing": 300,
+   "rating": 3.85
+  },
+  {
+   "name": "Nasrin Ahmed 123",
+   "skills": [
+    "access-control",
+    "printer"
+   ],
+   "bio": "6 years, mostly Canon and Ricoh photocopiers: drums, fusers and paper feed.",
+   "specialty": "generalist",
+   "distanceKm": 1.3,
+   "bearing": 119,
+   "rating": 3.89
+  },
+  {
+   "name": "Tanvir Ahmed 124",
+   "skills": [
+    "access-control",
+    "solar"
+   ],
+   "bio": "4 years, mostly rooftop solar panels, inverters and batteries.",
+   "specialty": "generalist",
+   "distanceKm": 2.1,
+   "bearing": 305,
+   "rating": 4.23
+  },
+  {
+   "name": "Farhana Ahmed 125",
+   "skills": [
+    "access-control",
+    "electrical"
+   ],
+   "bio": "9 years, mostly office wiring, sockets and distribution boards.",
+   "specialty": "generalist",
+   "distanceKm": 0.9,
+   "bearing": 316,
+   "rating": 4.51
+  }
+ ],
+ "jobs": [
+  {
+   "id": "canon-copier-1",
+   "title": "Photocopier jams on every page",
+   "description": "The big Canon copier on the 2nd floor jams on every page and shows a fuser error.",
+   "skills": [
+    "printer"
+   ],
+   "specialty": "canon-copier",
+   "relevant": [
+    "Karim Uddin 01",
+    "Sumon Uddin 02",
+    "Nasrin Uddin 03",
+    "Tanvir Uddin 04",
+    "Farhana Uddin 05"
+   ]
+  },
+  {
+   "id": "canon-copier-2",
+   "title": "Copier prints with black lines",
+   "description": "Our Ricoh photocopier prints black lines down every page after the drum change.",
+   "skills": [
+    "printer"
+   ],
+   "specialty": "canon-copier",
+   "relevant": [
+    "Karim Uddin 01",
+    "Sumon Uddin 02",
+    "Nasrin Uddin 03",
+    "Tanvir Uddin 04",
+    "Farhana Uddin 05"
+   ]
+  },
+  {
+   "id": "receipt-printer-1",
+   "title": "Receipt printer prints blank",
+   "description": "The thermal receipt printer at the till prints blank slips.",
+   "skills": [
+    "printer"
+   ],
+   "specialty": "receipt-printer",
+   "relevant": [
+    "Jamal Uddin 06",
+    "Rupa Uddin 07",
+    "Shakil Uddin 08",
+    "Mitu Uddin 09",
+    "Arif Uddin 10"
+   ]
+  },
+  {
+   "id": "hp-laser-1",
+   "title": "LaserJet offline on the network",
+   "description": "Our HP LaserJet shows offline for everyone on the office network.",
+   "skills": [
+    "printer"
+   ],
+   "specialty": "hp-laser",
+   "relevant": [
+    "Lima Uddin 11",
+    "Rahim Hossain 12",
+    "Karim Hossain 13",
+    "Sumon Hossain 14",
+    "Nasrin Hossain 15"
+   ]
+  },
+  {
+   "id": "wifi-1",
+   "title": "Weak Wi-Fi on the 3rd floor",
+   "description": "Wi-Fi keeps dropping on the 3rd floor meeting rooms; we need better coverage.",
+   "skills": [
+    "networking"
+   ],
+   "specialty": "wifi",
+   "relevant": [
+    "Rupa Hossain 19",
+    "Shakil Hossain 20",
+    "Mitu Hossain 21",
+    "Arif Hossain 22",
+    "Lima Hossain 23"
+   ]
+  },
+  {
+   "id": "wifi-2",
+   "title": "New office needs Wi-Fi",
+   "description": "Set up Wi-Fi access points and cabling for our new 20-desk office.",
+   "skills": [
+    "networking"
+   ],
+   "specialty": "wifi",
+   "relevant": [
+    "Rupa Hossain 19",
+    "Shakil Hossain 20",
+    "Mitu Hossain 21",
+    "Arif Hossain 22",
+    "Lima Hossain 23"
+   ]
+  },
+  {
+   "id": "fibre-1",
+   "title": "Fibre link down after road work",
+   "description": "Our fibre internet line was cut during road work outside the branch.",
+   "skills": [
+    "networking"
+   ],
+   "specialty": "fibre",
+   "relevant": [
+    "Rahim Ahmed 24",
+    "Karim Ahmed 25",
+    "Sumon Ahmed 26",
+    "Nasrin Ahmed 27",
+    "Tanvir Ahmed 28"
+   ]
+  },
+  {
+   "id": "router-vpn-1",
+   "title": "Branch VPN not connecting",
+   "description": "The branch VPN tunnel to head office won't come up after the router reset.",
+   "skills": [
+    "networking"
+   ],
+   "specialty": "router-vpn",
+   "relevant": [
+    "Farhana Ahmed 29",
+    "Jamal Ahmed 30",
+    "Rupa Ahmed 31",
+    "Shakil Ahmed 32",
+    "Mitu Ahmed 33"
+   ]
+  },
+  {
+   "id": "ip-camera-1",
+   "title": "NVR not recording",
+   "description": "Our NVR stopped recording two of the IP cameras last night.",
+   "skills": [
+    "cctv"
+   ],
+   "specialty": "ip-camera",
+   "relevant": [
+    "Karim Akter 37",
+    "Sumon Akter 38",
+    "Nasrin Akter 39",
+    "Tanvir Akter 40",
+    "Farhana Akter 41"
+   ]
+  },
+  {
+   "id": "ip-camera-2",
+   "title": "Install 6 IP cameras",
+   "description": "We need 6 new IP cameras installed around the warehouse with an NVR.",
+   "skills": [
+    "cctv"
+   ],
+   "specialty": "ip-camera",
+   "relevant": [
+    "Karim Akter 37",
+    "Sumon Akter 38",
+    "Nasrin Akter 39",
+    "Tanvir Akter 40",
+    "Farhana Akter 41"
+   ]
+  },
+  {
+   "id": "vault-cctv-1",
+   "title": "Vault camera tamper alarm",
+   "description": "The camera inside the branch vault keeps raising a tamper alarm.",
+   "skills": [
+    "cctv"
+   ],
+   "specialty": "vault-cctv",
+   "relevant": [
+    "Jamal Akter 42",
+    "Rupa Akter 43",
+    "Shakil Akter 44",
+    "Mitu Akter 45",
+    "Arif Akter 46"
+   ]
+  },
+  {
+   "id": "split-ac-1",
+   "title": "Split AC leaking water",
+   "description": "The split AC in the manager's room is leaking water onto the floor.",
+   "skills": [
+    "ac-repair"
+   ],
+   "specialty": "split-ac",
+   "relevant": [
+    "Sumon Islam 50",
+    "Nasrin Islam 51",
+    "Tanvir Islam 52",
+    "Farhana Islam 53",
+    "Jamal Islam 54"
+   ]
+  },
+  {
+   "id": "split-ac-2",
+   "title": "AC needs gas refill",
+   "description": "Our office split AC blows warm air; it probably needs a gas refill.",
+   "skills": [
+    "ac-repair"
+   ],
+   "specialty": "split-ac",
+   "relevant": [
+    "Sumon Islam 50",
+    "Nasrin Islam 51",
+    "Tanvir Islam 52",
+    "Farhana Islam 53",
+    "Jamal Islam 54"
+   ]
+  },
+  {
+   "id": "server-cooling-1",
+   "title": "Server room overheating",
+   "description": "Server room temperature is 32 degrees; the precision cooling unit has stopped.",
+   "skills": [
+    "ac-repair"
+   ],
+   "specialty": "server-cooling",
+   "relevant": [
+    "Rupa Islam 55",
+    "Shakil Islam 56",
+    "Mitu Islam 57",
+    "Arif Islam 58",
+    "Lima Islam 59"
+   ]
+  },
+  {
+   "id": "atm-dispenser-1",
+   "title": "ATM not dispensing cash",
+   "description": "The ATM debits customers but doesn't dispense cash; probably a cassette jam.",
+   "skills": [
+    "atm"
+   ],
+   "specialty": "atm-dispenser",
+   "relevant": [
+    "Nasrin Rahman 63",
+    "Tanvir Rahman 64",
+    "Farhana Rahman 65",
+    "Jamal Rahman 66",
+    "Rupa Rahman 67"
+   ]
+  },
+  {
+   "id": "atm-dispenser-2",
+   "title": "ATM cash jam",
+   "description": "Notes are stuck in the ATM's dispenser at the Banani booth.",
+   "skills": [
+    "atm"
+   ],
+   "specialty": "atm-dispenser",
+   "relevant": [
+    "Nasrin Rahman 63",
+    "Tanvir Rahman 64",
+    "Farhana Rahman 65",
+    "Jamal Rahman 66",
+    "Rupa Rahman 67"
+   ]
+  },
+  {
+   "id": "atm-card-reader-1",
+   "title": "ATM eats cards",
+   "description": "The ATM card reader keeps retaining customers' cards.",
+   "skills": [
+    "atm"
+   ],
+   "specialty": "atm-card-reader",
+   "relevant": [
+    "Shakil Rahman 68",
+    "Mitu Rahman 69",
+    "Arif Rahman 70",
+    "Lima Rahman 71",
+    "Rahim Khan 72"
+   ]
+  },
+  {
+   "id": "office-wiring-1",
+   "title": "Sockets not working",
+   "description": "Half the sockets in the open office stopped working after a short circuit.",
+   "skills": [
+    "electrical"
+   ],
+   "specialty": "office-wiring",
+   "relevant": [
+    "Tanvir Khan 76",
+    "Farhana Khan 77",
+    "Jamal Khan 78",
+    "Rupa Khan 79",
+    "Shakil Khan 80"
+   ]
+  },
+  {
+   "id": "office-wiring-2",
+   "title": "Tripping breaker",
+   "description": "The main breaker in our office distribution board trips every afternoon.",
+   "skills": [
+    "electrical"
+   ],
+   "specialty": "office-wiring",
+   "relevant": [
+    "Tanvir Khan 76",
+    "Farhana Khan 77",
+    "Jamal Khan 78",
+    "Rupa Khan 79",
+    "Shakil Khan 80"
+   ]
+  },
+  {
+   "id": "industrial-1",
+   "title": "Factory motor won't start",
+   "description": "A three-phase motor on the sewing line won't start; the panel shows a phase fault.",
+   "skills": [
+    "electrical"
+   ],
+   "specialty": "industrial",
+   "relevant": [
+    "Mitu Khan 81",
+    "Arif Khan 82",
+    "Lima Khan 83",
+    "Rahim Sarkar 84",
+    "Karim Sarkar 85"
+   ]
+  },
+  {
+   "id": "diesel-gen-1",
+   "title": "Generator won't take over",
+   "description": "During load shedding the generator starts but the changeover switch doesn't switch.",
+   "skills": [
+    "generator"
+   ],
+   "specialty": "diesel-gen",
+   "relevant": [
+    "Farhana Sarkar 89",
+    "Jamal Sarkar 90",
+    "Rupa Sarkar 91",
+    "Shakil Sarkar 92",
+    "Mitu Sarkar 93"
+   ]
+  },
+  {
+   "id": "diesel-gen-2",
+   "title": "Generator service due",
+   "description": "Our 60 kVA diesel generator needs its 500-hour service.",
+   "skills": [
+    "generator"
+   ],
+   "specialty": "diesel-gen",
+   "relevant": [
+    "Farhana Sarkar 89",
+    "Jamal Sarkar 90",
+    "Rupa Sarkar 91",
+    "Shakil Sarkar 92",
+    "Mitu Sarkar 93"
+   ]
+  },
+  {
+   "id": "card-machine-1",
+   "title": "Card machine declines everything",
+   "description": "Our Verifone card machine declines every card with a communication error.",
+   "skills": [
+    "pos-terminal"
+   ],
+   "specialty": "card-machine",
+   "relevant": [
+    "Karim Uddin 97",
+    "Sumon Uddin 98",
+    "Nasrin Uddin 99",
+    "Tanvir Uddin 100",
+    "Farhana Uddin 101"
+   ]
+  },
+  {
+   "id": "card-machine-2",
+   "title": "Payment terminal frozen",
+   "description": "The Ingenico payment terminal at counter 3 is frozen on the logo.",
+   "skills": [
+    "pos-terminal"
+   ],
+   "specialty": "card-machine",
+   "relevant": [
+    "Karim Uddin 97",
+    "Sumon Uddin 98",
+    "Nasrin Uddin 99",
+    "Tanvir Uddin 100",
+    "Farhana Uddin 101"
+   ]
+  },
+  {
+   "id": "rooftop-solar-1",
+   "title": "Solar inverter error",
+   "description": "Our rooftop solar inverter shows a grid fault and stopped producing.",
+   "skills": [
+    "solar"
+   ],
+   "specialty": "rooftop-solar",
+   "relevant": [
+    "Mitu Uddin 105",
+    "Arif Uddin 106",
+    "Lima Uddin 107",
+    "Rahim Hossain 108",
+    "Karim Hossain 109"
+   ]
+  },
+  {
+   "id": "rooftop-solar-2",
+   "title": "Install rooftop solar",
+   "description": "We want 10 kW of rooftop solar with batteries on the warehouse.",
+   "skills": [
+    "solar"
+   ],
+   "specialty": "rooftop-solar",
+   "relevant": [
+    "Mitu Uddin 105",
+    "Arif Uddin 106",
+    "Lima Uddin 107",
+    "Rahim Hossain 108",
+    "Karim Hossain 109"
+   ]
+  },
+  {
+   "id": "card-doors-1",
+   "title": "Door reader not unlocking",
+   "description": "The card reader on the main door doesn't unlock for anyone since this morning.",
+   "skills": [
+    "access-control"
+   ],
+   "specialty": "card-doors",
+   "relevant": [
+    "Farhana Hossain 113",
+    "Jamal Hossain 114",
+    "Rupa Hossain 115",
+    "Shakil Hossain 116",
+    "Mitu Hossain 117"
+   ]
+  },
+  {
+   "id": "biometric-1",
+   "title": "Attendance machine not syncing",
+   "description": "Our fingerprint attendance machine stopped syncing with the HR software.",
+   "skills": [
+    "access-control"
+   ],
+   "specialty": "biometric",
+   "relevant": [
+    "Arif Hossain 118",
+    "Lima Hossain 119",
+    "Rahim Ahmed 120",
+    "Karim Ahmed 121",
+    "Sumon Ahmed 122"
+   ]
+  },
+  {
+   "id": "receipt-printer-2",
+   "title": "Label printer smudges",
+   "description": "The label printer at the warehouse dispatch desk prints smudged barcodes.",
+   "skills": [
+    "printer"
+   ],
+   "specialty": "receipt-printer",
+   "relevant": [
+    "Jamal Uddin 06",
+    "Rupa Uddin 07",
+    "Shakil Uddin 08",
+    "Mitu Uddin 09",
+    "Arif Uddin 10"
+   ]
+  },
+  {
+   "id": "hp-laser-2",
+   "title": "LaserJet toner streaks",
+   "description": "Our HP LaserJet leaves toner streaks after the new cartridge.",
+   "skills": [
+    "printer"
+   ],
+   "specialty": "hp-laser",
+   "relevant": [
+    "Lima Uddin 11",
+    "Rahim Hossain 12",
+    "Karim Hossain 13",
+    "Sumon Hossain 14",
+    "Nasrin Hossain 15"
+   ]
+  }
+ ]
+}
