@@ -79,7 +79,8 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-thymeleaf</artifactId>
         </dependency>
-        <!-- Circuit breaker and retry around SMTP (T20). The core libraries, configured in code. -->
+        <!-- Circuit breaker, retry and rate limiter around SMTP and AI providers (T20, T28). The core libraries,
+             configured in code. -->
         <dependency>
             <groupId>io.github.resilience4j</groupId>
             <artifactId>resilience4j-circuitbreaker</artifactId>
@@ -88,6 +89,11 @@
         <dependency>
             <groupId>io.github.resilience4j</groupId>
             <artifactId>resilience4j-retry</artifactId>
+            <version>${resilience4j.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.github.resilience4j</groupId>
+            <artifactId>resilience4j-ratelimiter</artifactId>
             <version>${resilience4j.version}</version>
         </dependency>
         <!-- Scheduled jobs run on one instance at a time: a lock row in PostgreSQL (T22). -->

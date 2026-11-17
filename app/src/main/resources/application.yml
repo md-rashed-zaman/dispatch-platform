@@ -70,11 +70,14 @@ spring:
       genai:
         # From the environment only (.env locally, a secret in deployment), never in a file in git.
         # Without one the client refuses to start, so the default is a placeholder: the app (and CI) start,
-        # and only a model call fails, with Google's invalid-key error (step 3.2 adds the fallback).
+        # and a model call fails with Google's invalid-key error, so AI features use their fallback.
         api-key: ${GEMINI_API_KEY:not-set}
         chat:
-          model: gemini-flash-lite-latest   # about 1-4 s on the free tier; docs/ai-limits.md
-          temperature: 0.2                  # low: we want the same answer for the same input, not creativity
+          model: gemini-flash-lite-latest   # default only; the AI gateway picks the model for each call
+    retry:
+      # The AI gateway owns retries (ADR 0012). Spring AI's own default is 10 attempts with growing pauses,
+      # hidden inside one call.
+      max-attempts: 1
   security:
     oauth2:
       resourceserver:
@@ -133,6 +136,32 @@ dispatch:
     escalate-after: PT6H              # still nobody: tell the company
     widened-radius-km: 40
     check-interval: PT1M
+  ai:
+    # Numbers from the free-tier limits and measurements in docs/ai-limits.md (step 3.1).
+    call-timeout: PT10S               # one HTTP call; successful calls took 1-7 s, failed ones hung 40 s+
+    deadline: PT25S                   # a whole feature call: room for one hung call (10 s) and a second model
+    attempts-per-model: 2             # one retry on 503/429/timeout, then the next model
+    retry-backoff: PT1S               # 1 s, then 2 s (+-25% jitter)
+    daily-calls-per-tenant: ${AI_DAILY_CALLS_PER_TENANT:100}   # the free quota is ~500/day, shared by all
+    circuit:
+      open-for: PT30S
+    models:
+      # Client-side limits stay below the provider's per-minute quota (15 RPM for both). Prices are list
+      # prices in USD per million tokens, assumed from Flash-Lite's published tier; check
+      # https://ai.google.dev/gemini-api/docs/pricing before using the cost numbers.
+      gemini-flash-lite-latest:
+        requests-per-minute: 12
+        input-price-per-million: 0.10
+        output-price-per-million: 0.40
+      gemini-3.1-flash-lite:          # its own quota (15 RPM, 500 a day) and servers: a real second chance
+        requests-per-minute: 12
+        input-price-per-million: 0.10
+        output-price-per-million: 0.40
+    features:
+      skill-suggestions: [gemini-flash-lite-latest, gemini-3.1-flash-lite]
+    replay:
+      mode: ${AI_REPLAY_MODE:off}     # off | record | replay (tests and evals; replay never calls the provider)
+      directory: ${AI_REPLAY_DIR:ai-replay}
   instance-name: ${INSTANCE_NAME:${HOSTNAME:local}}   # in logs, to see which instance did what
   web:
     base-url: ${WEB_BASE_URL:http://localhost:5173}   # the dashboard, for links in emails

@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Check, Plus, Sparkles } from "lucide-react";
 import { useState, type FormEvent, type ReactNode } from "react";
 import { Link, useNavigate } from "react-router";
 import { ApiError, post, type WorkOrder } from "../api";
@@ -76,8 +76,11 @@ function validate(f: Form): Partial<Record<keyof Form, string>> {
   return errors;
 }
 
+type Suggestion = { skills: string[]; available: boolean };
+
 export function NewWorkOrderPage() {
   const [form, setForm] = useState<Form>(EMPTY);
+  const [suggestion, setSuggestion] = useState<Suggestion | null>(null);
   const [errors, setErrors] = useState<Partial<Record<keyof Form, string>>>({});
   const [publish, setPublish] = useState(true);
   const navigate = useNavigate();
@@ -116,6 +119,18 @@ export function NewWorkOrderPage() {
     },
   });
 
+  // A button, not on every keystroke: each suggestion is a metered model call (design-system screens.md §3).
+  const suggest = useMutation({
+    mutationFn: () =>
+      post<Suggestion>("/api/ai/skill-suggestions", { title: form.title.trim(), description: form.description.trim() }),
+    onSuccess: setSuggestion,
+    onError: () => setSuggestion({ skills: [], available: false }), // the form works without it
+  });
+  const chosen = skillCodes(form.skills);
+  const addSkill = (code: string) => {
+    if (!chosen.includes(code)) setForm({ ...form, skills: [...chosen, code].join(", ") });
+  };
+
   const submit = (event: FormEvent, andPublish: boolean) => {
     event.preventDefault();
     const found = validate(form);
@@ -133,7 +148,10 @@ export function NewWorkOrderPage() {
     id: name,
     name,
     value: form[name],
-    onChange: (e: { target: { value: string } }) => setForm({ ...form, [name]: e.target.value }),
+    onChange: (e: { target: { value: string } }) => {
+      setForm({ ...form, [name]: e.target.value });
+      if (name === "title" || name === "description") setSuggestion(null); // they described other text
+    },
     "aria-invalid": !!errors[name],
     "aria-describedby": errors[name] ? `${name}-error` : undefined,
     className: `w-full rounded-md border bg-card px-3 py-2 text-base transition-colors ${errors[name] ? "border-destructive" : "border-border"}`,
@@ -171,7 +189,24 @@ export function NewWorkOrderPage() {
           </Field>
         </div>
 
-        <Field label="Required skills" name="skills" error={errors.skills} hint="Comma-separated, like cctv, networking">
+        <Field
+          label="Required skills"
+          name="skills"
+          error={errors.skills}
+          hint="Comma-separated, like cctv, networking"
+          after={<SkillSuggestions suggestion={suggestion} chosen={chosen} onAdd={addSkill} />}
+          action={
+            <Button
+              type="button"
+              variant="secondary"
+              className="h-8 px-2.5 text-xs max-sm:h-11"
+              loading={suggest.isPending}
+              disabled={!form.title.trim() || !form.description.trim()}
+              onClick={() => suggest.mutate()}>
+              {!suggest.isPending && <Sparkles aria-hidden className="size-3.5" />}
+              {suggest.isPending ? "Suggesting…" : "Suggest from description"}
+            </Button>
+          }>
           <input {...field("skills")} placeholder="cctv" autoCapitalize="none" />
         </Field>
 
@@ -205,16 +240,68 @@ export function NewWorkOrderPage() {
   );
 }
 
-function Field(props: { label: string; name: string; error?: string; hint?: string; children: ReactNode }) {
+function SkillSuggestions(props: { suggestion: Suggestion | null; chosen: string[]; onAdd: (code: string) => void }) {
+  const { suggestion, chosen, onAdd } = props;
+  let message = "";
+  if (suggestion && !suggestion.available) message = "Suggestions aren't available right now. Type the skills yourself.";
+  else if (suggestion && suggestion.skills.length === 0) message = "No skill on our list fits. Type the skills yourself.";
+  else if (suggestion) {
+    const n = suggestion.skills.length;
+    message = `${n} suggested skill${n === 1 ? "" : "s"}: ${suggestion.skills.join(", ")}`;
+  }
+  return (
+    // Always mounted, so screen readers hear the status when it changes; no space taken until there's a message.
+    <div className={`flex flex-wrap items-center gap-2 ${suggestion ? "mt-2" : ""}`}>
+      {/* One atomic status message for screen readers; the pills below are the visible version. */}
+      <span role="status" aria-atomic="true" className={suggestion?.skills.length ? "sr-only" : "text-sm text-muted-foreground"}>
+        {message}
+      </span>
+      {suggestion && suggestion.skills.length > 0 && (
+        <>
+          <span aria-hidden className="text-sm text-muted-foreground">Suggested by AI:</span>
+          {suggestion.skills.map((code) => {
+            const added = chosen.includes(code);
+            return (
+              <button
+                key={code}
+                type="button"
+                disabled={added}
+                onClick={() => onAdd(code)}
+                aria-label={added ? `Skill ${code} added` : `Add skill ${code}`}
+                className="data inline-flex h-7 cursor-pointer items-center gap-1 rounded-full border border-border bg-card px-2.5 text-xs transition-colors duration-150 hover:bg-muted disabled:cursor-default disabled:border-transparent disabled:bg-primary-soft disabled:text-link max-sm:h-11">
+                {added ? <Check aria-hidden className="size-3.5" /> : <Plus aria-hidden className="size-3.5" />}
+                {code}
+              </button>
+            );
+          })}
+        </>
+      )}
+    </div>
+  );
+}
+
+function Field(props: {
+  label: string;
+  name: string;
+  error?: string;
+  hint?: string;
+  action?: ReactNode;
+  after?: ReactNode;
+  children: ReactNode;
+}) {
   return (
     <div>
-      <label htmlFor={props.name} className="block text-sm font-medium">{props.label}</label>
+      <div className={`flex flex-wrap items-center justify-between gap-2 ${props.action ? "min-h-8" : ""}`}>
+        <label htmlFor={props.name} className="block text-sm font-medium">{props.label}</label>
+        {props.action}
+      </div>
       <div className="mt-1.5">{props.children}</div>
       {props.error ? (
         <p id={`${props.name}-error`} className="mt-1.5 text-sm text-destructive dark:text-red-400">{props.error}</p>
       ) : (
         props.hint && <p className="mt-1.5 text-sm text-muted-foreground">{props.hint}</p>
       )}
+      {props.after}
     </div>
   );
 }

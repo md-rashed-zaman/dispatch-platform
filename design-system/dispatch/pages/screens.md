@@ -55,3 +55,18 @@ Fields: Title, Description, Site address, Site location (latitude, longitude; a 
 
 - Submit: `POST /api/work-orders` → on 201, "Publish now" or "Save as draft" (two buttons: the second only creates; the first creates then publishes).
 - Validation: client-side for required fields and number ranges; server Problem Details field errors (`errors[]`) shown under each field; other problems in an alert at the top.
+
+### Skill suggestions (step 3.2)
+
+```
+Required skills                                   [✦ Suggest from description]
+[ printer, networking                              ]
+Suggested by AI: [+ printer] [+ networking]       (role=status)
+```
+
+- **Trigger: a button, not automatic.** Each suggestion is a metered model call under a daily company budget; suggesting on every keystroke would spend it on half-typed text. Secondary button, sparkles icon plus words (never icon-only), next to the field label; enabled once title and description have text.
+- **Loading:** the button keeps its width and shows the spinner with "Suggesting…"; the form stays usable (typing skills by hand is always possible). Typical wait 1-8 s, worst 25 s, so no skeleton: the rest of the form isn't waiting.
+- **Result:** "Suggested by AI:" (the label says it's AI, ux AI-disclaimer) and one outline pill button per skill, `+ code`; pressing it adds the code to the field (no duplicates) and turns the pill into `✓ code`, disabled. Pills are 44 px high on touch. Nothing is added without a press: the dispatcher decides.
+- **Empty:** "No skill on our list fits. Type the skills yourself." **Unavailable** (`available: false`, or the request failed): "Suggestions aren't available right now. Type the skills yourself." Muted text, never red: nothing is wrong with the form.
+- **Accessibility:** the result line is one `role="status"` `aria-atomic` message ("2 suggested skills: printer, networking"); focus stays where it is; each pill's accessible name is "Add skill printer".
+- Changing the title or description clears old suggestions, so they never describe different text.

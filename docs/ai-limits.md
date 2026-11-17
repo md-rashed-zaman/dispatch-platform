@@ -57,7 +57,7 @@ Same short prompt, plain `curl` to `generateContent`:
 ## How to re-measure
 
 ```bash
-set -a; . ./.env; set +a
+export $(grep ^GEMINI_API_KEY= .env)   # only the key: .env also holds example passwords
 curl -s -H "x-goog-api-key: $GEMINI_API_KEY" -H 'Content-Type: application/json' \
   "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-lite-latest:generateContent" \
   -d '{"contents":[{"role":"user","parts":[{"text":"Say hello"}]}]}' | jq '.usageMetadata'
