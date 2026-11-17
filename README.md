@@ -23,6 +23,7 @@ Built as a portfolio project to show production backend engineering: correctness
 | **One trace from request to consumer** | Metrics and traces over OpenTelemetry to Grafana. The request's trace is stored with each outbox event, so one trace runs from the HTTP call through async routing, the outbox relay and Kafka to both consumers. Two SLOs (accepts under 300 ms, assignment within 30 minutes) with error budgets, a burn-rate alert and its runbook. | [trace](docs/images/trace-across-kafka.png), [dashboard](docs/images/observability-dashboard.png), [runbook](docs/runbooks/accept-latency.md) |
 | **Fails politely** | Database or storage down: 503 with `Retry-After` within 3 s, readiness `DOWN`, automatic recovery. Every error is RFC 9457 Problem Details. | [docs/failure-modes.md](docs/failure-modes.md) |
 | **Chaos day** | Kafka and Redis stopped under traffic: no errors. A lock on one table took the whole API down through the connection pool, and nothing paged. Fixed with database timeouts and an error-rate alert, then the same failure repeated: only the blocked writes failed, fast, and the alert fired. | [postmortem](docs/runbooks/postmortem-2026-11-16.md), [ADR 0011](docs/adr/0011-database-timeouts-on-the-application-role.md), `DatabaseLockTimeoutTests` |
+| **AI that can't fail a request** | Every model call goes through one gateway: versioned prompts, a 10 s timeout, retries on 503, a second model when the first is down or hanging, a circuit breaker and rate limit per model, a daily budget per company, phone numbers and emails redacted before sending, and an audit row per attempt. Skill suggestions pick only from skills technicians actually have; with a bad key or the provider down the form still works, without suggestions. | [ADR 0012](docs/adr/0012-ai-gateway-in-front-of-model-providers.md), [measured limits](docs/ai-limits.md), `AiGatewayTests` |
 
 ## Architecture
 
@@ -140,7 +141,7 @@ Optional sample data (3 companies, 50,000 technicians across Bangladesh, 30 work
 docker compose -f infra/compose/docker-compose.yml exec -T postgres psql -U dispatch -d dispatch -v ON_ERROR_STOP=1 < infra/seed/dev-seed.sql
 ```
 
-- AI (Phase 3): put a Gemini key from Google AI Studio in `.env` as `GEMINI_API_KEY` and start the app with it exported (`set -a; . ../.env; set +a`). Without it everything else works; only AI calls fail. Free-tier limits and measured behaviour: [docs/ai-limits.md](docs/ai-limits.md)
+- AI (Phase 3): put a Gemini key from Google AI Studio in `.env` as `GEMINI_API_KEY` and start the app with just that value exported (`export $(grep ^GEMINI_API_KEY= ../.env)`; sourcing the whole `.env` would also export its example database passwords). Without it everything else works; AI suggestions say they're unavailable. Free-tier limits and measured behaviour: [docs/ai-limits.md](docs/ai-limits.md)
 - Dispatcher web app: `cd web && npm install && npm run dev`, then http://localhost:5173 (sign in as `dispatcher.meghna` / `password`)
 - Health: http://localhost:8080/actuator/health
 - API docs: http://localhost:8080/swagger-ui/index.html (click **Authorize**, log in as a test user below)

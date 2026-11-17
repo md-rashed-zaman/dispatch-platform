@@ -19,7 +19,8 @@ import org.springframework.context.annotation.Configuration;
 
 /**
  * One real Gemini call through the same Spring AI auto-configuration the app uses (step 3.1). It needs a key, so
- * it runs only when GEMINI_API_KEY is exported (`set -a; . ../.env; set +a`): CI has none and never calls the API.
+ * it runs only when GEMINI_API_KEY is exported ({@code export $(grep ^GEMINI_API_KEY= ../.env)}): CI has none
+ * and never calls the API.
  */
 @EnabledIfEnvironmentVariable(named = "GEMINI_API_KEY", matches = ".+")
 @SpringBootTest(classes = GeminiChatClientTests.GeminiOnly.class)
