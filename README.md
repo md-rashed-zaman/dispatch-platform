@@ -16,13 +16,13 @@ Built as a portfolio project to show production backend engineering: correctness
 | **Lifecycle that can't be broken** | A ten-row transition table; every command from every status is tested (90 pairs). Edits need `If-Match`, so nobody overwrites changes they haven't seen (412). | [ADR 0004](docs/adr/0004-hand-written-state-machine.md), [lifecycle](docs/diagrams/work-order-lifecycle.md) |
 | **Photos without touching the API** | Presigned URLs signed for one key, content type and size, valid 5 minutes. Confirm checks what arrived, down to the first bytes. Same code on SeaweedFS locally and Amazon S3. | [upload flow](docs/diagrams/attachment-upload.md), `AttachmentApiTests` |
 | **Events that can't get lost** | Every lifecycle change goes to Kafka through a transactional outbox: the event row commits with the change, and a relay sends it. Kafka down, or the app killed with `kill -9`: requests keep succeeding and every event arrives later, in order per work order. | [ADR 0006](docs/adr/0006-polling-outbox-before-cdc.md), `OutboxRelayTests` |
-| **Consumers that survive real delivery** | The notification consumer deduplicates by event id in the same transaction as its work, retries temporary failures with exponential backoff, and moves poison messages to a dead-letter topic without stopping. Replaying the whole topic notified nobody twice. | `CompanyNotificationsTests`, [failure modes](docs/failure-modes.md) |
+| **Consumers that survive real delivery** | The notification consumer deduplicates by event id in the same transaction as its work, retries temporary failures with exponential backoff, and moves poison messages to a dead-letter topic without stopping. Replaying the whole topic notified nobody twice. | [ADR 0008](docs/adr/0008-idempotent-consumers-retries-and-dead-letters.md), `CompanyNotificationsTests` |
 | **Live dashboard, email that can wait** | Dispatchers get every change of their company's work orders over server-sent events within a second; every app instance reads every event, so it works behind a load balancer. Emails are queued, sent through a circuit breaker, and retried for hours: with the mail server down, the API doesn't slow down and no email is lost. | [ADR 0007](docs/adr/0007-sse-over-websocket.md), `LiveUpdatesTests`, `EmailSenderTests` |
-| **Jobs that run once on many instances** | Work orders nobody takes are offered farther away after 2 hours and escalated to the company after 6. ShedLock runs each round on one instance; every step is also guarded by state and version, so even two runs at once change each work order once. Two instances and a load balancer locally: `--profile cluster`. | `SlaPolicyTests`, [failure modes](docs/failure-modes.md) |
-| **Cache and rate limits that can't take the API down** | Technician profiles are cached in Redis (cache-aside, jittered TTL, single-flight) and evicted after an update commits, so the next read is fresh. Each company gets a token bucket shared by every instance: a burst of 200 gets 100 through, then 429 with `Retry-After`. With Redis down, both step aside: reads come from the database and requests aren't limited. | `TechnicianProfileCacheTests`, `RateLimitTests` |
+| **Jobs that run once on many instances** | Work orders nobody takes are offered farther away after 2 hours and escalated to the company after 6. ShedLock runs each round on one instance; every step is also guarded by state and version, so even two runs at once change each work order once. Two instances and a load balancer locally: `--profile cluster`. | [ADR 0009](docs/adr/0009-scheduled-jobs-run-once-with-shedlock-and-idempotent-steps.md), `SlaPolicyTests` |
+| **Cache and rate limits that can't take the API down** | Technician profiles are cached in Redis (cache-aside, jittered TTL, single-flight) and evicted after an update commits, so the next read is fresh. Each company gets a token bucket shared by every instance: a burst of 200 gets 100 through, then 429 with `Retry-After`. With Redis down, both step aside: reads come from the database and requests aren't limited. | [ADR 0010](docs/adr/0010-redis-is-optional-cache-and-rate-limits-fail-open.md), `TechnicianProfileCacheTests`, `RateLimitTests` |
 | **One trace from request to consumer** | Metrics and traces over OpenTelemetry to Grafana. The request's trace is stored with each outbox event, so one trace runs from the HTTP call through async routing, the outbox relay and Kafka to both consumers. Two SLOs (accepts under 300 ms, assignment within 30 minutes) with error budgets, a burn-rate alert and its runbook. | [trace](docs/images/trace-across-kafka.png), [dashboard](docs/images/observability-dashboard.png), [runbook](docs/runbooks/accept-latency.md) |
 | **Fails politely** | Database or storage down: 503 with `Retry-After` within 3 s, readiness `DOWN`, automatic recovery. Every error is RFC 9457 Problem Details. | [docs/failure-modes.md](docs/failure-modes.md) |
-| **Chaos day** | Kafka and Redis stopped under traffic: no errors. A lock on one table took the whole API down through the connection pool, and nothing paged. Fixed with database timeouts and an error-rate alert, then the same failure repeated: only the blocked writes failed, fast, and the alert fired. | [postmortem](docs/runbooks/postmortem-2026-11-16.md), `DatabaseLockTimeoutTests` |
+| **Chaos day** | Kafka and Redis stopped under traffic: no errors. A lock on one table took the whole API down through the connection pool, and nothing paged. Fixed with database timeouts and an error-rate alert, then the same failure repeated: only the blocked writes failed, fast, and the alert fired. | [postmortem](docs/runbooks/postmortem-2026-11-16.md), [ADR 0011](docs/adr/0011-database-timeouts-on-the-application-role.md), `DatabaseLockTimeoutTests` |
 
 ## Architecture
 
@@ -55,6 +55,9 @@ flowchart LR
   kc["Keycloak 26<br/>OAuth2 / OIDC"]
   s3[("SeaweedFS<br/>S3 API")]
   kafka[["Kafka 4 (KRaft)<br/>dispatch.workorder.events.v1"]]
+  redis[("Redis 8<br/>profile cache,<br/>rate-limit buckets")]
+  smtp["SMTP<br/>(Mailpit locally)"]
+  lgtm["Grafana LGTM<br/>metrics, traces, alerts"]
   web -- "REST + JWT" --> api
   phone -- "REST + JWT" --> api
   phone -- "PUT bytes, presigned" --> s3
@@ -62,9 +65,14 @@ flowchart LR
   api -- "fetches signing keys" --> kc
   api -- "HEAD, ranged GET, DELETE" --> s3
   api -- "outbox relay:<br/>work order events" --> kafka
+  kafka -- "notification and<br/>live-update consumers" --> api
+  api -- "cache, token buckets<br/>(optional: fails open)" --> redis
+  api -- "queued emails,<br/>circuit breaker" --> smtp
+  api -- "OTLP: metrics, traces" --> lgtm
+  api -. "SSE: live updates" .-> web
 ```
 
-Modules talk through public APIs and events only; Spring Modulith fails the build on a boundary violation. Workorder never calls matching: matching reacts to `WorkOrderPublished` after the commit, and notification to `WorkOrderAssigned`. Other systems get every status change from Kafka, keyed by work order id; notification itself reads them from there to tell the company, as a separate service would. The [context map](docs/diagrams/context-map.md) shows the planned modules (matching, payment, ledger, notification, AI) and the events between them.
+Modules talk through public APIs and events only; Spring Modulith fails the build on a boundary violation. Workorder never calls matching: matching reacts to `WorkOrderPublished` after the commit, and notification to `WorkOrderAssigned`. Other systems get every status change from Kafka, keyed by work order id ([events and topics](docs/diagrams/events-and-topics.md)); notification itself reads them from there to tell the company, as a separate service would. The [context map](docs/diagrams/context-map.md) shows the planned modules (matching, payment, ledger, notification, AI) and the events between them.
 
 **From publish to accept:**
 
