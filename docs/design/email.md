@@ -1,6 +1,6 @@
 # Email design
 
-The first visual piece of Dispatch: the emails a company's dispatch team receives. The same tokens will seed the dispatcher dashboard. Template: `app/src/main/resources/templates/email/work-order-update.html` (and `.txt`).
+The first visual piece of Dispatch: the emails a company's dispatch team receives. The web app uses the same tokens: [`design-system/dispatch/MASTER.md`](../../design-system/dispatch/MASTER.md). Template: `app/src/main/resources/templates/email/work-order-update.html` (and `.txt`).
 
 ## Direction
 

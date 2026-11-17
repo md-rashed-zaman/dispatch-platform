@@ -44,3 +44,25 @@ jobs:
           name: jacoco-report
           path: app/target/site/jacoco/
           if-no-files-found: ignore
+
+  # The dispatcher web app: type check and production build
+  web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install
+        run: npm ci --no-audit --no-fund
+
+      - name: Type check and build
+        run: npm run build

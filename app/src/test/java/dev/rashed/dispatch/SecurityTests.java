@@ -15,6 +15,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpHeaders;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 
@@ -26,6 +27,9 @@ import org.springframework.test.web.servlet.ResultActions;
 @SpringBootTest
 @AutoConfigureMockMvc
 class SecurityTests {
+
+    @Autowired
+    JdbcTemplate jdbc;
 
     @Autowired
     MockMvc mvc;
@@ -90,6 +94,19 @@ class SecurityTests {
     @Test
     void platformAdminCanListCompanies() throws Exception {
         call("/api/companies", TestTokens.platformAdmin()).andExpect(status().isOk());
+    }
+
+    @Test
+    void aDispatcherSeesTheirOwnCompanyOnly() throws Exception {
+        jdbc.update(
+                "insert into company (id, name, slug) values (?, 'Meghna Bank PLC', 'meghna-bank') on conflict do nothing",
+                TestTokens.MEGHNA_BANK);
+
+        call("/api/companies/mine", TestTokens.dispatcher())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(TestTokens.MEGHNA_BANK.toString()))
+                .andExpect(jsonPath("$.name").value("Meghna Bank PLC"));
+        call("/api/companies/mine", TestTokens.platformAdmin()).andExpect(status().isForbidden());
     }
 
     private ResultActions call(String path, String token) throws Exception {

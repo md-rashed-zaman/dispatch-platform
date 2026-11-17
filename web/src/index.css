@@ -1,0 +1,99 @@
+@import "tailwindcss";
+
+/* Tokens: design-system/dispatch/MASTER.md. Light by default, dark from the OS setting. */
+:root {
+  --background: #f8fafc;
+  --card: #ffffff;
+  --foreground: #0f172a;
+  --muted: #f1f5f9;
+  --muted-foreground: #475569;
+  --border: #e2e8f0;
+  --primary: #2563eb;
+  --primary-hover: #1d4ed8;
+  --primary-soft: rgb(37 99 235 / 0.08);
+  --link: #2563eb;
+  --destructive: #b91c1c;
+  --destructive-hover: #991b1b;
+  --ok: #16a34a;
+  --warn: #d97706;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0b1220;
+    --card: #111a2e;
+    --foreground: #e2e8f0;
+    --muted: #1a2438;
+    --muted-foreground: #94a3b8;
+    --border: #1e293b;
+    --primary-soft: rgb(59 130 246 / 0.14);
+    --link: #60a5fa;
+  }
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-soft: var(--primary-soft);
+  --color-link: var(--link);
+  --color-destructive: var(--destructive);
+  --color-destructive-hover: var(--destructive-hover);
+  --color-ok: var(--ok);
+  --color-warn: var(--warn);
+  --font-sans: "Fira Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Fira Code", ui-monospace, monospace;
+}
+
+html,
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Numbers that line up in columns: ids, money, times. */
+.data {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* A row the live stream just changed. */
+@keyframes flash {
+  from {
+    background-color: var(--primary-soft);
+  }
+  to {
+    background-color: transparent;
+  }
+}
+.flash {
+  animation: flash 1.2s ease-out;
+}
+
+@keyframes pulse-dot {
+  50% {
+    opacity: 0.35;
+  }
+}
+.pulse-dot {
+  animation: pulse-dot 1.6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flash,
+  .pulse-dot {
+    animation: none;
+  }
+}
