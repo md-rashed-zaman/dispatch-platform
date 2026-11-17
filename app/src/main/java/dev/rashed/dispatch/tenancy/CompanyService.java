@@ -1,5 +1,6 @@
 package dev.rashed.dispatch.tenancy;
 
+import dev.rashed.dispatch.shared.NotFoundException;
 import java.util.List;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -23,5 +24,16 @@ class CompanyService {
         return companies.findAll(Sort.by("name")).stream()
                 .map(CompanySummary::of)
                 .toList();
+    }
+
+    /** The caller's own company: what a company's users see of it (the web app shows its name). */
+    @PreAuthorize("hasAnyRole('CLIENT_ADMIN', 'DISPATCHER')")
+    @Transactional(readOnly = true)
+    public CompanySummary mine() {
+        var tenantId = TenantContext.current().orElseThrow(() -> new NotFoundException("Company", "of the caller"));
+        return companies
+                .findById(tenantId)
+                .map(CompanySummary::of)
+                .orElseThrow(() -> new NotFoundException("Company", tenantId));
     }
 }

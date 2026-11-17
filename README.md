@@ -48,7 +48,7 @@ flowchart LR
 
 ```mermaid
 flowchart LR
-  web["Dispatcher web app<br/>(later)"]
+  web["Dispatcher web app<br/>React, TypeScript (web/)"]
   phone["Technician app"]
   api["<b>Dispatch API</b><br/>Spring Boot modular monolith, Java 21<br/>modules: identity, tenancy, workorder,<br/>technician, matching, notification,<br/>media, outbox, web"]
   pg[("PostgreSQL 17<br/>PostGIS, pgvector,<br/>row-level security")]
@@ -106,6 +106,14 @@ Stack: Spring Boot 4.1, Spring Modulith 2.1, Hibernate 7, Flyway, PostgreSQL 17 
 - Operations: [docs/failure-modes.md](docs/failure-modes.md)
 - Domain: [event storming](docs/domain/event-storming.md), [glossary](docs/glossary.md)
 
+## Dispatcher web app
+
+The bank's dispatcher sees their work orders change as it happens: a technician accepting or submitting work updates the row within a second, without a reload. From the detail page they publish, approve, or send work back with a reason; new work orders are created with validation from both the browser and the API's Problem Details. Light and dark, desktop and phone. Design system made with ui-ux-pro-max: [`design-system/dispatch`](design-system/dispatch/MASTER.md); details in [`web/README.md`](web/README.md).
+
+![Work orders list](docs/images/web-work-orders.jpg)
+
+![A work order, dark mode](docs/images/web-work-order-dark.jpg)
+
 ## Observability
 
 One publish, one trace: the HTTP request, the async routing, the outbox relay, the Kafka send, and both consumers (company notifications and live updates), even though the event leaves through the outbox later, on another thread. The request's `traceparent` is stored with the outbox event and restored by the relay.
@@ -132,6 +140,7 @@ Optional sample data (3 companies, 50,000 technicians across Bangladesh, 30 work
 docker compose -f infra/compose/docker-compose.yml exec -T postgres psql -U dispatch -d dispatch -v ON_ERROR_STOP=1 < infra/seed/dev-seed.sql
 ```
 
+- Dispatcher web app: `cd web && npm install && npm run dev`, then http://localhost:5173 (sign in as `dispatcher.meghna` / `password`)
 - Health: http://localhost:8080/actuator/health
 - API docs: http://localhost:8080/swagger-ui/index.html (click **Authorize**, log in as a test user below)
 - Keycloak admin console: http://localhost:8180 (admin / admin)

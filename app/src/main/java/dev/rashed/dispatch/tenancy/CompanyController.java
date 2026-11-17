@@ -23,4 +23,10 @@ class CompanyController {
     List<CompanySummary> list() {
         return companyService.listAll();
     }
+
+    @Operation(summary = "My company (company users)")
+    @GetMapping("/mine")
+    CompanySummary mine() {
+        return companyService.mine();
+    }
 }
