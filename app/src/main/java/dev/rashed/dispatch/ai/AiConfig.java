@@ -10,12 +10,13 @@ import io.github.resilience4j.ratelimiter.RateLimiterRegistry;
 import java.time.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.google.genai.embedding.GoogleGenAiEmbeddingConnectionDetails;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-@Configuration
+@Configuration(proxyBeanMethods = false) // no calls between @Bean methods; avoids a startup warning
 @EnableConfigurationProperties(AiProperties.class)
 class AiConfig {
 
@@ -34,6 +35,14 @@ class AiConfig {
                         .timeout(Math.toIntExact(ai.callTimeout().toMillis()))
                         .retryOptions(HttpRetryOptions.builder().attempts(1).build())
                         .build())
+                .build();
+    }
+
+    /** Embeddings use the same client, so the same timeout and no hidden retries. */
+    @Bean
+    GoogleGenAiEmbeddingConnectionDetails googleGenAiEmbeddingConnectionDetails(Client googleGenAiClient) {
+        return GoogleGenAiEmbeddingConnectionDetails.builder()
+                .genAiClient(googleGenAiClient)
                 .build();
     }
 

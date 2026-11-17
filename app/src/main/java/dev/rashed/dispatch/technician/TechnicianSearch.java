@@ -38,6 +38,8 @@ public class TechnicianSearch {
               AND t.home_location && ST_Buffer(site.point, :radiusMeters * 1.05)
               AND t.home_location <-> site.point <= least(:radiusMeters, t.service_radius_km * 1000)
             """;
+    // Same search without the skill filter: the candidate pool for hybrid ranking, which scores skills itself.
+    private static final String SEARCH_ANY_SKILL = SEARCH.replace("  AND t.skills @> CAST(:skills AS text[])\n", "");
     private static final String AFTER_CURSOR =
             "  AND (t.home_location <-> site.point, t.id) > (:afterDistance, :afterId)\n";
     private static final String ORDER_AND_LIMIT = "ORDER BY distance_m, t.id\nLIMIT :limit";
@@ -82,6 +84,25 @@ public class TechnicianSearch {
                 .param("longitude", site.longitude())
                 .param("radiusMeters", radiusKm * 1000)
                 .param("skills", Skill.codes(requiredSkills).toArray(String[]::new))
+                .param("limit", limit)
+                .query(TechnicianSearch::row)
+                .list()
+                .stream()
+                .map(Row::technician)
+                .toList();
+    }
+
+    /**
+     * The nearest verified technicians whatever their skills, nearest first, for matching's hybrid ranking. Like
+     * {@link #nearest}, for system callers.
+     */
+    @Transactional(readOnly = true)
+    public List<NearbyTechnician> nearestWithAnySkills(GeoPoint site, int radiusKm, int limit) {
+        return jdbc
+                .sql(SEARCH_ANY_SKILL + ORDER_AND_LIMIT)
+                .param("latitude", site.latitude())
+                .param("longitude", site.longitude())
+                .param("radiusMeters", radiusKm * 1000)
                 .param("limit", limit)
                 .query(TechnicianSearch::row)
                 .list()

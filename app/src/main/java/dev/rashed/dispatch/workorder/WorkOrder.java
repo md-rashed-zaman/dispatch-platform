@@ -215,6 +215,8 @@ public class WorkOrder {
                 tenantId,
                 site,
                 requiredSkills().stream().map(Skill::code).sorted().toList(),
+                title,
+                description,
                 Timestamps.now()));
     }
 

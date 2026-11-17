@@ -37,7 +37,13 @@ public class Outbox {
      */
     @Transactional(propagation = Propagation.MANDATORY)
     public UUID append(
-            String topic, String key, String type, int version, UUID tenantId, Instant occurredAt, Object payload) {
+            String topic,
+            String key,
+            String type,
+            int version,
+            @Nullable UUID tenantId,
+            Instant occurredAt,
+            Object payload) {
         var envelope = new OutboxEnvelope(UUID.randomUUID(), type, version, occurredAt, tenantId, key, payload);
         jdbc.sql("""
                         insert into outbox_event (event_id, topic, message_key, event_type, payload, trace_parent)

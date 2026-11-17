@@ -24,6 +24,7 @@ import java.util.stream.Collectors;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UuidGenerator;
 import org.hibernate.type.SqlTypes;
+import org.jspecify.annotations.Nullable;
 import org.springframework.data.domain.AfterDomainEventPublication;
 import org.springframework.data.domain.DomainEvents;
 
@@ -55,6 +56,9 @@ public class Technician {
 
     /** Average rating from 1.00 to 5.00; null until the first rated job. */
     private BigDecimal rating;
+
+    /** What they say they do, in their own words; optional. Matching embeds it (step 3.4). */
+    private String bio;
 
     @Enumerated(EnumType.STRING)
     private TechnicianStatus status;
@@ -93,12 +97,13 @@ public class Technician {
     }
 
     /** The technician changed what they do and how far they travel. */
-    public void updateProfile(Collection<String> skills, int serviceRadiusKm) {
+    public void updateProfile(Collection<String> skills, int serviceRadiusKm, @Nullable String bio) {
         if (serviceRadiusKm < 1 || serviceRadiusKm > MAX_SERVICE_RADIUS_KM) {
             throw new IllegalArgumentException("Service radius must be 1 to " + MAX_SERVICE_RADIUS_KM + " km");
         }
         this.skills = Skill.codes(skills);
         this.serviceRadiusKm = serviceRadiusKm;
+        this.bio = bio == null || bio.isBlank() ? null : bio.strip();
         events.add(new TechnicianUpdated(id));
     }
 
@@ -135,6 +140,10 @@ public class Technician {
 
     public GeoPoint home() {
         return home;
+    }
+
+    public @Nullable String bio() {
+        return bio;
     }
 
     public int serviceRadiusKm() {
