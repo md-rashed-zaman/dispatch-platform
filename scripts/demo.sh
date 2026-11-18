@@ -44,9 +44,9 @@ LIVE_PID=$!
 
 step "The bank creates a job at its Gulshan branch and publishes it"
 WORK_ORDER=$(api POST /api/work-orders "$DISPATCHER" '{
-  "title": "CCTV camera offline", "description": "Camera 3 in the vault shows no signal.",
+  "title": "CCTV camera offline", "description": "Camera 3 in the vault shows no signal; the recorder lost its network link.",
   "siteAddress": "Gulshan Avenue, Dhaka", "site": {"latitude": 23.7930, "longitude": 90.4130},
-  "requiredSkills": ["cctv"],
+  "requiredSkills": ["cctv", "networking"],
   "timeWindow": {"startsAt": "2026-12-01T04:00:00Z", "endsAt": "2026-12-01T08:00:00Z"},
   "budget": {"minor": 300000, "currency": "BDT"}, "checklist": ["Photo of the working camera"]}' | jq -r .id)
 api POST "/api/work-orders/$WORK_ORDER/publish" "$DISPATCHER" | jq '{status}'

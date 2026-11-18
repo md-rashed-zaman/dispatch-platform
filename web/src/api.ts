@@ -68,10 +68,26 @@ export type WorkOrder = WorkOrderSummary & {
   requiredSkills: string[];
   technicianId: string | null;
   rejectionReason: string | null;
+  completionNotes: string | null;
   checklist: { position: number; description: string }[];
 };
 
 export type Page<T> = { items: T[]; next: string | null };
+
+/** GET /api/work-orders/{id}/audit: the AI check of the latest submission (step 3.5). */
+export type Audit = {
+  id: string;
+  workOrderId: string;
+  state: "NEEDS_REVIEW" | "AUTO_APPROVED" | "APPROVED" | "REJECTED" | "DECIDED_ELSEWHERE";
+  model: string | null;
+  promptVersion: string;
+  items: { position: number; verdict: "MET" | "NOT_MET" | "UNCLEAR"; evidence: string }[];
+  confidence: number | null;
+  photoCount: number;
+  recommendation: "APPROVE" | "REVIEW";
+  reason: string;
+  decisionReason: string | null;
+};
 
 export type Attachment = {
   id: string;

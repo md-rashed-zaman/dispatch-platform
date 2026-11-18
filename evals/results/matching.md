@@ -1,6 +1,6 @@
 # Matching eval
 
-Run 2026-11-18 02:41 (Asia/Dhaka). 30 jobs, 125 technicians. Weights: semantic 0.5, skills 0.2, distance 0.15, rating 0.1, reliability 0.05.
+Run 2026-11-19 02:15 (Asia/Dhaka). 30 jobs, 125 technicians. Weights: semantic 0.5, skills 0.2, distance 0.15, rating 0.1, reliability 0.05.
 
 | Ranking | Precision@5 |
 |---|---|

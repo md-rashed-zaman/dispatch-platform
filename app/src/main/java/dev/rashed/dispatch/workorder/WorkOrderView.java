@@ -22,6 +22,7 @@ public record WorkOrderView(
         Money budget,
         UUID technicianId,
         String rejectionReason,
+        String completionNotes,
         List<ChecklistItemView> checklist,
         Instant createdAt,
         @JsonIgnore long version) { // sent as the ETag header, not in the body
@@ -41,6 +42,7 @@ public record WorkOrderView(
                 workOrder.budget(),
                 workOrder.technicianId(),
                 workOrder.rejectionReason(),
+                workOrder.completionNotes(),
                 workOrder.checklist().stream()
                         .map(item -> new ChecklistItemView(item.position(), item.description()))
                         .toList(),

@@ -19,8 +19,11 @@ class RowLevelSecurityGuardTests {
     @Autowired
     JdbcTemplate jdbc;
 
-    @Autowired
-    PostgreSQLContainer postgres;
+    // This context's own database, as the container's superuser: the schema owner, the role the guard must refuse.
+    @org.springframework.beans.factory.annotation.Value("${spring.datasource.url}")
+    String url;
+
+    final PostgreSQLContainer postgres = TestcontainersConfiguration.POSTGRES;
 
     @Test
     void acceptsTheAppRole() {
@@ -29,8 +32,7 @@ class RowLevelSecurityGuardTests {
 
     @Test
     void rejectsTheOwnerRoleWhichWouldSkipThePolicies() {
-        var owner = new SingleConnectionDataSource(
-                postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword(), true);
+        var owner = new SingleConnectionDataSource(url, postgres.getUsername(), postgres.getPassword(), true);
         try {
             assertThatThrownBy(() -> RowLevelSecurityGuard.verify(new JdbcTemplate(owner)))
                     .hasMessageContaining("bypasses row-level security");

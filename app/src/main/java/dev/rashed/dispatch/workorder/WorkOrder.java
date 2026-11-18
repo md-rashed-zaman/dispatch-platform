@@ -95,6 +95,9 @@ public class WorkOrder {
     /** Why the submitted work was sent back. Cleared when the technician submits again. */
     private String rejectionReason;
 
+    /** What the technician said when submitting; a claim the completion audit checks against the photos. */
+    private String completionNotes;
+
     // Unidirectional: items never navigate back to their work order, so there's no back-reference to keep in sync.
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "work_order_id", nullable = false, updatable = false)
@@ -279,9 +282,10 @@ public class WorkOrder {
         apply(Transition.START);
     }
 
-    public void submit() {
+    public void submit(@Nullable String notes) {
         requireAllowed(Transition.SUBMIT);
         this.rejectionReason = null;
+        this.completionNotes = notes == null || notes.isBlank() ? null : notes.strip();
         apply(Transition.SUBMIT);
     }
 
@@ -377,6 +381,10 @@ public class WorkOrder {
 
     public UUID technicianId() {
         return technicianId;
+    }
+
+    public @Nullable String completionNotes() {
+        return completionNotes;
     }
 
     public String rejectionReason() {

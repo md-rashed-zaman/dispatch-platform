@@ -24,6 +24,7 @@ Built as a portfolio project to show production backend engineering: correctness
 | **Fails politely** | Database or storage down: 503 with `Retry-After` within 3 s, readiness `DOWN`, automatic recovery. Every error is RFC 9457 Problem Details. | [docs/failure-modes.md](docs/failure-modes.md) |
 | **Chaos day** | Kafka and Redis stopped under traffic: no errors. A lock on one table took the whole API down through the connection pool, and nothing paged. Fixed with database timeouts and an error-rate alert, then the same failure repeated: only the blocked writes failed, fast, and the alert fired. | [postmortem](docs/runbooks/postmortem-2026-11-16.md), [ADR 0011](docs/adr/0011-database-timeouts-on-the-application-role.md), `DatabaseLockTimeoutTests` |
 | **AI that can't fail a request** | Every model call goes through one gateway: versioned prompts, a 10 s timeout, retries on 503, a second model when the first is down or hanging, a circuit breaker and rate limit per model, a daily budget per company, phone numbers and emails redacted before sending, and an audit row per attempt. Skill suggestions pick only from skills technicians actually have; with a bad key or the provider down the form still works, without suggestions. | [ADR 0012](docs/adr/0012-ai-gateway-in-front-of-model-providers.md), [measured limits](docs/ai-limits.md), `AiGatewayTests` |
+| **AI checks finished work; people decide when it's unsure** | When a technician submits, a vision model checks the photos against each checklist item (met, not met, unclear, with evidence). Code, not the model, decides: every item met and at least 80% sure approves as the system; anything else goes to a review queue, and it never rejects on its own. On 100 labeled jobs (photos from Wikimedia Commons), no false approval at any threshold, and 30 of 32 really done jobs approved without a person. | [eval](evals/results/audit.md), [confusion matrix](#completion-audit) |
 | **Matching by meaning, measured** | Technicians are ranked by a weighted score: how close their profile is in meaning to the job (pgvector, embeddings), required skills, distance, rating and reliability; `GET /api/work-orders/{id}/matches/explain` shows every part. On a 30-job eval where several technicians share each tag, precision@5 went from 0.03 (nearest with the tag) to 0.78. Profiles are re-embedded from Kafka events. | [ADR 0013](docs/adr/0013-pgvector-instead-of-a-separate-vector-database.md), [vector search](docs/perf/vector-search.md), [eval](evals/results/matching.md) |
 | **A work order from one message, measured** | "Motijheel head office er AC theke pani porche, kalke bikele kauke pathan" fills the form: title, `ac-repair`, the address, tomorrow 13:00-17:00, a checklist. The answer is checked like untrusted input, gets one corrected try with its errors, and what's still wrong is left for the dispatcher. 50-case eval in English, Banglish and Bangla: 99.6% of fields right. | [evals](evals/README.md), [results](#ai-evals) |
 
@@ -159,6 +160,24 @@ The intake parser is measured on 50 messages a bank might send (20 English, 15 B
 | Semantic only | 0.93 |
 
 The eval is built to reward meaning, so tags-only scores near zero by design: it shows what semantic matching adds, not the real-world precision. Semantic-only scores highest here but ignores travel distance; the chosen weights keep distance deciding between equally good specialists.
+
+### Completion audit
+
+100 jobs with photos (Wikimedia Commons, [credits](evals/audit/photos/ATTRIBUTION.md)):
+- **32 really done.**
+- **68 not done:** wrong photo, near misses (parts not installed, the error still on screen), only part of the checklist, misleading notes, a prompt injection in the notes, no photo.
+
+Auto-approve when every item is MET and confidence >= the threshold ([results](evals/results/audit.md)):
+
+| At threshold 0.80 | Approved without a person | Sent to a person |
+|---|---|---|
+| **Really done** | 30 | 2 |
+| **Not done** | **0** | 68 |
+
+- **Every not-done job was caught by "every item MET",** so there were no false approvals at any threshold from 0 to 1. Confidence decides only among all-MET jobs: from 0 to 0.80 the same 30 done jobs pass; above that, done jobs start going to people (28 at 0.85, 26 at 0.95).
+- **Why 0.80:** the highest threshold that loses nothing; the margin is for data the eval hasn't seen.
+- **The 2 sent to a person** were generators on trailers, where the AI couldn't tell whether this was the final site. That's a fair call for a person.
+- **Labels corrected:** the first run found 4 of my labels wrong (an ATM open for service labeled "in service", a hand-held terminal labeled "at the counter", bullet cameras for a "dome camera" job). They were corrected and re-scored from recordings, and each correction is marked in [cases.json](evals/audit/cases.json).
 
 ## Getting started
 

@@ -1,0 +1,6 @@
+{
+  "model" : "gemini-flash-lite-latest",
+  "text" : "{\n  \"confidence\": 0.4,\n  \"items\": [\n    {\n      \"evidence\": \"The photo shows a yellow towable generator unit parked on a street next to a van, but it appears to be mobile transport rather than installed in place on site.\",\n      \"position\": 0,\n      \"verdict\": \"UNCLEAR\"\n    }\n  ]\n}",
+  "inputTokens" : 1656,
+  "outputTokens" : 85
+}

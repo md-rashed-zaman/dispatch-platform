@@ -50,7 +50,7 @@ final class WorkOrders {
                 WorkOrder::route,
                 w -> w.assign(technicianId),
                 WorkOrder::start,
-                WorkOrder::submit,
+                w -> w.submit(null),
                 WorkOrder::approve,
                 WorkOrder::markPaid);
         for (var step : path) {

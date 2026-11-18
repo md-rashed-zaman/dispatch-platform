@@ -49,6 +49,25 @@ Gulshan Avenue, Dhaka · ref 01a1e8…  [copy]
 - Live: the same stream; an event for this work order refetches it.
 - Rejected work shows the reason in an amber note under the title.
 
+### AI check (step 3.5)
+
+```
+┌ AI CHECK ─────────────────────────────────────── 92% sure ┐
+│ Needs your review: item 2 is unclear from the photos.     │
+│ ✓ Met      Photo of the camera mounted                    │
+│            Dome camera on the corner bracket.             │
+│ ? Unclear  Photo of the live feed                         │
+│            No photo shows a monitor or screen.            │
+│ gemini-3.5-flash-lite · prompt v1 · The AI recommends; you decide.
+└───────────────────────────────────────────────────────────┘
+```
+
+- From `GET /api/work-orders/{id}/audit`, for SUBMITTED work and after a decision (404 = no audit: no panel). Placed above Checklist, full width.
+- **Summary line:** "Approved automatically" (green) or "Needs your review" (orange, same as the status pill), then the policy's reason. After a decision: "Approved by a reviewer", "Sent back: <reason>", "Decided on the work order".
+- **Items:** an icon *and* a word per verdict (✓ Met green, ✗ Not met red, ? Unclear amber), never color alone; the evidence below in muted text.
+- **While the check runs** (SUBMITTED, no audit yet): "AI check running…" with a spinner; the page polls every 3 s for up to 2 minutes.
+- **Approve and Reject** in the header go through the review endpoints while an audit is open, so the decision is recorded against what the AI said; otherwise through the work order endpoints as before.
+
 ## 3. New work order `/work-orders/new`
 
 Fields: Title, Description, Site address, Site location (latitude, longitude; a hint shows Dhaka's range), Required skills (comma-separated chips, lowercase-with-dashes), Time window (start, end; datetime-local in the browser's time zone), Budget (BDT, two decimals → minor units), Checklist (one item per line, at least one).

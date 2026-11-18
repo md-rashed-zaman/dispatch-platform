@@ -1,0 +1,6 @@
+{
+  "model" : "gemini-flash-lite-latest",
+  "text" : "{\n  \"confidence\": 0.5,\n  \"items\": [\n    {\n      \"evidence\": \"The photo shows a generator mounted on a trailer attached to a truck on a street, but it is not clear if this is the final intended site location.\",\n      \"position\": 0,\n      \"verdict\": \"UNCLEAR\"\n    }\n  ]\n}",
+  "inputTokens" : 1699,
+  "outputTokens" : 83
+}

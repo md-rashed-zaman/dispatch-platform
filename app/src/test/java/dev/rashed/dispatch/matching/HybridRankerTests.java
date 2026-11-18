@@ -102,6 +102,19 @@ class HybridRankerTests {
     }
 
     @Test
+    void aTechnicianNotYetEmbeddedDoesntOutrankAMeasuredMatch() {
+        // Closer than the specialist and with the same tag, but no vector yet: counted as the pool's midpoint.
+        var unknown = TestTechnicians.verified(jdbc, site.latitude() + 0.005, site.longitude(), skill);
+
+        var matches = ranker.rank(site, 20, List.of(skill), Optional.of(axis(0)), 10);
+
+        assertThat(matches)
+                .extracting(HybridRanker.Match::technicianId)
+                .containsExactly(specialist, unknown, generalist);
+        assertThat(matches.get(1).semantic()).isNull(); // explain still says nothing was measured
+    }
+
+    @Test
     void withoutAJobVectorRankingGoesOnWithoutTheSemanticPart() {
         var matches = ranker.rank(site, 20, List.of(skill), Optional.empty(), 10);
 
