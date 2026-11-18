@@ -1,8 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Check, Copy, ImageIcon, MapPin, Star } from "lucide-react";
-import { useState } from "react";
+import { ArrowLeft, Check, CircleHelp, Copy, ImageIcon, LoaderCircle, MapPin, Star, X } from "lucide-react";
+import { useRef, useState } from "react";
 import { Link, useParams } from "react-router";
-import { api, ApiError, post, type Attachment, type Status, type TechnicianProfile, type WorkOrder } from "../api";
+import { api, ApiError, post, type Attachment, type Audit, type Status, type TechnicianProfile, type WorkOrder } from "../api";
 import { Button, ConfirmDialog, ErrorNote, Panel, Skeleton, StatusPill } from "../components/ui";
 import { money, shortId, STATUS, timeWindow } from "../format";
 import { useRecentChanges } from "../recent";
@@ -27,10 +27,29 @@ export function WorkOrderPage() {
     enabled: !!technicianId,
   });
 
+  // The AI check arrives a few seconds after submission (step 3.5): poll for it, for at most two minutes.
+  const pollingSince = useRef(Date.now());
+  const audit = useQuery({
+    queryKey: ["work-orders", "audit", id],
+    queryFn: () =>
+      api<Audit>(`/api/work-orders/${id}/audit`).catch((e) => {
+        if (e instanceof ApiError && e.problem.status === 404) return null; // not audited (yet)
+        throw e;
+      }),
+    enabled: workOrder.isSuccess,
+    refetchInterval: (q) =>
+      workOrder.data?.status === "SUBMITTED" && !q.state.data && Date.now() - pollingSince.current < 120_000 ? 3000 : false,
+  });
+  const openAudit = audit.data?.state === "NEEDS_REVIEW" ? audit.data : null;
+
   const [confirm, setConfirm] = useState<"cancel" | "reject" | null>(null);
   const [reason, setReason] = useState("");
   const action = useMutation({
-    mutationFn: ({ name, body }: { name: string; body?: unknown }) => post(`/api/work-orders/${id}/${name}`, body),
+    // While an audit is open, decisions go through the review queue, so they're recorded against what the AI said.
+    mutationFn: ({ name, body }: { name: string; body?: unknown }) =>
+      openAudit && (name === "approve" || name === "reject")
+        ? post(`/api/reviews/${openAudit.id}/${name}`, body)
+        : post(`/api/work-orders/${id}/${name}`, body),
     onSuccess: () => {
       setConfirm(null);
       setReason("");
@@ -132,6 +151,12 @@ export function WorkOrderPage() {
             </div>
           )}
         </Panel>
+
+        {(audit.data || (w.status === "SUBMITTED" && audit.isSuccess)) && (
+          <div className="lg:col-span-2">
+            <AiCheck audit={audit.data ?? null} checklist={w.checklist} notes={w.completionNotes} />
+          </div>
+        )}
 
         <Panel title="Checklist">
           <ol className="space-y-2 text-sm">
@@ -299,5 +324,82 @@ function DetailSkeleton() {
         {Array.from({ length: 4 }, (_, i) => <Skeleton key={i} className="h-40" />)}
       </div>
     </div>
+  );
+}
+
+const VERDICT = {
+  MET: { label: "Met", icon: Check, className: "text-green-700 dark:text-green-400" },
+  NOT_MET: { label: "Not met", icon: X, className: "text-red-700 dark:text-red-400" },
+  UNCLEAR: { label: "Unclear", icon: CircleHelp, className: "text-amber-700 dark:text-amber-400" },
+} as const;
+
+const OUTCOME: Record<Audit["state"], string> = {
+  NEEDS_REVIEW: "Needs your review",
+  AUTO_APPROVED: "Approved automatically",
+  APPROVED: "Approved by a reviewer",
+  REJECTED: "Sent back by a reviewer",
+  DECIDED_ELSEWHERE: "Decided on the work order",
+};
+
+/** What the AI found in the photos, per checklist item. It recommends; people (or the policy) decide. */
+function AiCheck(props: { audit: Audit | null; checklist: WorkOrder["checklist"]; notes: string | null }) {
+  const { audit, checklist, notes } = props;
+  if (!audit) {
+    return (
+      <Panel title="AI check">
+        <p role="status" className="inline-flex items-center gap-2 text-sm text-muted-foreground">
+          <LoaderCircle aria-hidden className="size-4 animate-spin" /> AI check running…
+        </p>
+      </Panel>
+    );
+  }
+  const describe = (position: number) => checklist.find((c) => c.position === position)?.description ?? `Item ${position + 1}`;
+  const sure = audit.confidence === null ? null : `${Math.round(audit.confidence * 100)}% sure`;
+  const tone =
+    audit.state === "NEEDS_REVIEW"
+      ? "text-orange-800 dark:text-orange-300"
+      : audit.state === "REJECTED"
+        ? "text-red-700 dark:text-red-400"
+        : "text-green-700 dark:text-green-400";
+  return (
+    <Panel title="AI check" action={sure && <span className="data text-xs text-muted-foreground">{sure}</span>}>
+      <p className="text-sm">
+        <span className={`font-medium ${tone}`}>{OUTCOME[audit.state]}</span>
+        <span className="text-muted-foreground">
+          {": "}
+          {audit.state === "REJECTED" && audit.decisionReason
+            ? audit.decisionReason
+            : // "Item 1 looks not done: <evidence>": the evidence is shown under the item, so not twice
+              audit.reason.replace(/^(Item \d+ (?:looks not done|is unclear from the photos)):.*$/s, "$1.")}
+        </span>
+      </p>
+      {audit.items.length > 0 && (
+        <ul className="mt-3 space-y-2.5">
+          {audit.items.map((item) => {
+            const v = VERDICT[item.verdict];
+            return (
+              <li key={item.position} className="grid grid-cols-[6.5rem_1fr] gap-x-3 text-sm">
+                <span className={`inline-flex items-center gap-1.5 font-medium ${v.className}`}>
+                  <v.icon aria-hidden className="size-4" /> {v.label}
+                </span>
+                <span>
+                  {item.position + 1}. {describe(item.position)}
+                  <span className="mt-0.5 block text-muted-foreground">{item.evidence}</span>
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+      {notes && (
+        <p className="mt-3 text-sm">
+          <span className="text-muted-foreground">Technician's notes: </span>
+          {notes}
+        </p>
+      )}
+      <p className="mt-3 border-t border-border pt-2.5 text-xs text-muted-foreground">
+        {audit.model ? `${audit.model} · prompt ${audit.promptVersion} · ` : ""}The AI recommends; you decide.
+      </p>
+    </Panel>
   );
 }

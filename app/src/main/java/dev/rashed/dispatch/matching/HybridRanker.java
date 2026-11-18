@@ -35,6 +35,9 @@ class HybridRanker {
 
     static final String JOB_FEATURE = "work-order-embedding";
 
+    /** The semantic part for a technician without a vector, when the job has one: the middle of the pool's 0-1 scale. */
+    static final double UNKNOWN_SEMANTIC = 0.5;
+
     /** One ranked technician with every part of the score, for the explain endpoint and logs. */
     record Match(
             UUID technicianId,
@@ -110,8 +113,10 @@ class HybridRanker {
                             + w.rating() * rating
                             + w.reliability() * reliability;
                     double weights = w.skills() + w.distance() + w.rating() + w.reliability();
-                    if (semantic != null) {
-                        weighted += w.semantic() * semantic;
+                    if (jobVector.isPresent()) {
+                        // A technician not embedded yet gets the pool's midpoint, not a pass: dropping the part
+                        // for them alone would rank "unknown" above "measured and mediocre".
+                        weighted += w.semantic() * (semantic == null ? UNKNOWN_SEMANTIC : semantic);
                         weights += w.semantic();
                     }
                     return new Match(

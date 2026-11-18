@@ -7,19 +7,23 @@ import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
 import io.github.resilience4j.ratelimiter.RateLimiterRegistry;
 import java.time.Duration;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
+import org.springframework.ai.content.Media;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.google.genai.GoogleGenAiChatOptions;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.stereotype.Component;
+import org.springframework.util.MimeType;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
@@ -73,7 +77,16 @@ class AiGateway {
      * @param feature also the prompt folder: {@code prompts/<feature>/<promptVersion>.st}
      * @param input the user's text and other values for the template; strings are redacted before use
      */
-    record Task<T>(String feature, String promptVersion, Map<String, Object> input, Class<T> answerType) {}
+    record Task<T>(
+            String feature, String promptVersion, Map<String, Object> input, Class<T> answerType, List<Image> images) {
+
+        Task(String feature, String promptVersion, Map<String, Object> input, Class<T> answerType) {
+            this(feature, promptVersion, input, answerType, List.of());
+        }
+    }
+
+    /** A photo sent with the prompt (vision models). Its hash is part of the replay key, never the bytes in logs. */
+    record Image(String contentType, byte[] bytes) {}
 
     sealed interface Answer<T> {
         record Answered<T>(T value, String model) implements Answer<T> {}
@@ -86,12 +99,18 @@ class AiGateway {
         var tenant = TenantContext.current()
                 .orElseThrow(() -> new IllegalStateException("AI calls are made on behalf of a tenant"));
         var input = redacted(task.input());
-        var inputJson = json.writeValueAsString(input);
+        var audited = new LinkedHashMap<String, Object>(input);
+        if (!task.images().isEmpty()) {
+            audited.put("images", imageHashes(task.images())); // which photos, by hash: the audit row stays small
+        }
+        var inputJson = json.writeValueAsString(audited);
         var converter = new BeanOutputConverter<>(task.answerType(), json);
         var prompt = render(task, input, converter.getFormat());
         var attempt = new Attempt(tenant, task, inputJson);
 
-        var recorded = replays.find(task.feature(), task.promptVersion(), prompt);
+        // The replay key covers the images too: the same words with other photos is another question.
+        var replayKey = task.images().isEmpty() ? prompt : prompt + "\nimages: " + imageHashes(task.images());
+        var recorded = replays.find(task.feature(), task.promptVersion(), replayKey);
         if (recorded.isPresent()) {
             var answer = recorded.get();
             var parsed = parse(converter, answer.text());
@@ -141,7 +160,7 @@ class AiGateway {
                 }
                 long started = System.nanoTime();
                 try {
-                    var response = breaker.executeSupplier(() -> call(model, prompt));
+                    var response = breaker.executeSupplier(() -> call(model, prompt, task.images()));
                     long millis = Duration.ofNanos(System.nanoTime() - started).toMillis();
                     metrics.tokens(
                             task.feature(), model, tenant, response, ai.models().get(model));
@@ -162,7 +181,7 @@ class AiGateway {
                     }
                     attempt.log(model, AiCallLog.Outcome.OK, response.text(), null, response, millis);
                     metrics.call(task.feature(), model, "ok", millis);
-                    replays.save(task.feature(), task.promptVersion(), prompt, response);
+                    replays.save(task.feature(), task.promptVersion(), replayKey, response);
                     return new Answer.Answered<>(parsed, model);
                 } catch (CallNotPermittedException open) { // opened between the check and the call
                     attempt.log(model, AiCallLog.Outcome.CIRCUIT_OPEN, null, null, null, 0);
@@ -201,7 +220,7 @@ class AiGateway {
     }
 
     /** One request to the provider; any failure on the way comes back as a {@link ProviderException}. */
-    private ModelReply call(String model, String prompt) {
+    private ModelReply call(String model, String prompt, List<Image> images) {
         var options = GoogleGenAiChatOptions.builder()
                 .model(model)
                 .temperature(TEMPERATURE)
@@ -209,7 +228,16 @@ class AiGateway {
                 .build();
         ChatResponse response;
         try {
-            response = chatModel.call(new Prompt(prompt, options));
+            var message = UserMessage.builder()
+                    .text(prompt)
+                    .media(images.stream()
+                            .map(image -> Media.builder()
+                                    .mimeType(MimeType.valueOf(image.contentType()))
+                                    .data(image.bytes())
+                                    .build())
+                            .toList())
+                    .build();
+            response = chatModel.call(new Prompt(message, options));
         } catch (RuntimeException e) {
             throw ProviderException.from(e);
         }
@@ -240,6 +268,12 @@ class AiGateway {
         } catch (RuntimeException invalid) {
             return null;
         }
+    }
+
+    private static String imageHashes(List<Image> images) {
+        return images.stream()
+                .map(image -> ReplayCache.sha256(image.bytes()))
+                .collect(java.util.stream.Collectors.joining(","));
     }
 
     private static Map<String, Object> redacted(Map<String, Object> input) {

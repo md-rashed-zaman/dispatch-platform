@@ -51,3 +51,28 @@ export $(grep ^GEMINI_API_KEY= ../.env)
 Embeddings are recorded in `matching/recordings` (one file per text), so re-scoring with new weights costs nothing; results go to `results/matching.md`.
 
 The eval is built so that only meaning can find the right technician. Read its numbers as "what semantic matching adds", not as real-world precision.
+
+## Completion audit (step 3.5)
+
+`audit/cases.json`: 100 jobs with photos from Wikimedia Commons (`audit/photos`, credits in `ATTRIBUTION.md`).
+- **32 really done.**
+- **68 not done:**
+  - an unrelated photo;
+  - near misses: CCTV parts not mounted, an AC product shot, a blue error screen for "screen works", a messy rack for "tidy rack";
+  - a second checklist item the photo doesn't show;
+  - notes that claim more than the photo shows;
+  - a prompt injection in the notes;
+  - no photo.
+
+`AuditEvals` runs the real vision check on each and scores:
+- the item verdicts;
+- the policy at every threshold: true approvals, **false approvals**, and done jobs sent to a person.
+
+The chosen threshold is the highest with no false approval that still automates the most done jobs.
+
+```bash
+export $(grep ^GEMINI_API_KEY= ../.env)
+./mvnw test -Dtest=AuditEvals -DexcludedGroups=none
+```
+
+Recorded in `audit/recordings` (keyed by prompt and photo hashes); results in `results/audit.md`. Four labels were corrected after the first run showed the photo didn't match the label; each is marked `relabeled` in the case with the reason.

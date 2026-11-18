@@ -5,6 +5,7 @@ import dev.rashed.dispatch.tenancy.TenantContext;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Consumer;
+import org.jspecify.annotations.Nullable;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -34,8 +35,8 @@ public class AssignedWorkService {
         return change(workOrderId, WorkOrder::start);
     }
 
-    public WorkOrderView submit(UUID workOrderId) {
-        return change(workOrderId, WorkOrder::submit);
+    public WorkOrderView submit(UUID workOrderId, @Nullable String notes) {
+        return change(workOrderId, workOrder -> workOrder.submit(notes));
     }
 
     private WorkOrderView change(UUID workOrderId, Consumer<WorkOrder> action) {

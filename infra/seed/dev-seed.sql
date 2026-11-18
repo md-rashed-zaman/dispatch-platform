@@ -93,8 +93,8 @@ WHERE t.id = src.id AND abs(hashtext(src.id::TEXT)) % 10 < 7;
 -- work orders published nearby are offered to this technician.
 INSERT INTO technician (id, full_name, phone, skills, home_latitude, home_longitude, service_radius_km, rating, status, bio)
 VALUES ('01930000-0000-7000-8000-0000000000a1', 'Rahim Uddin', '+8801900000001',
-        '{cctv,networking,pos-terminal,printer}', 23.7925, 90.4125, 30, 4.80, 'VERIFIED',
-        '12 years with HP and Canon printers, card machines and branch networks. Also CCTV for bank vaults.');
+        '{cctv,networking}', 23.7925, 90.4125, 30, 4.80, 'VERIFIED',
+        '12 years with CCTV and networks for bank branches: IP and vault cameras, NVR recorders and the branch networks they run on.');
 
 CREATE TEMP TABLE seeded_work_order ON COMMIT DROP AS
 SELECT gen_random_uuid() AS id, g FROM generate_series(1, 30) g;

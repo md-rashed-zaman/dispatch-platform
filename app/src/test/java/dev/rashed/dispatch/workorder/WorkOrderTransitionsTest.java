@@ -38,7 +38,7 @@ class WorkOrderTransitionsTest {
         OFFERS_EXPIRED(WorkOrder::offersExpired),
         ASSIGN(w -> w.assign(TECHNICIAN)),
         START(WorkOrder::start),
-        SUBMIT(WorkOrder::submit),
+        SUBMIT(w -> w.submit(null)),
         APPROVE(WorkOrder::approve),
         REJECT(w -> w.reject("Photo of the receipt is missing")),
         MARK_PAID(WorkOrder::markPaid),
@@ -125,7 +125,7 @@ class WorkOrderTransitionsTest {
         workOrder.reject("Photo of the receipt is missing");
         assertThat(workOrder.rejectionReason()).isEqualTo("Photo of the receipt is missing");
 
-        workOrder.submit();
+        workOrder.submit(null);
         assertThat(workOrder.rejectionReason()).isNull();
     }
 

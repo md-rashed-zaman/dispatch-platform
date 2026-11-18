@@ -57,6 +57,8 @@ Same short prompt, plain `curl` to `generateContent`:
 
 For embeddings that means: re-embedding 50,000 technician profiles takes about 55 days on the free tier (900 a day, leaving room for work orders) and minutes on a paid tier. Matching handles it by design: a paced backfill, and ranking without the semantic part for technicians not embedded yet (ADR 0013).
 
+Photo checks (step 3.5): a vision call with one 640 px photo is about 1,060 image tokens plus 40-400 text tokens, and took about 9 s on Flash-Lite; in the 100-job eval, 2 timed out at 15 s. The call timeout went from 10 s to 15 s, and the deadline to 35 s. The audit runs off the request path, so nobody waits for it.
+
 ## How to re-measure
 
 ```bash

@@ -1,0 +1,6 @@
+{
+  "model" : "gemini-flash-lite-latest",
+  "text" : "{\n  \"confidence\": 0.8,\n  \"items\": [\n    {\n      \"evidence\": \"The photo shows multiple ATMs installed in a row at their location, with screens dark and no visible error messages.\",\n      \"position\": 0,\n      \"verdict\": \"MET\"\n    }\n  ]\n}",
+  "inputTokens" : 1710,
+  "outputTokens" : 73
+}
