@@ -22,4 +22,25 @@ class RedactionTest {
     void keepsTextWithDollarSignsIntact() {
         assertThat(Redaction.redact("Costs $25 or 2500000 taka")).isEqualTo("Costs $25 or 2500000 taka");
     }
+
+    @Test
+    void removesTheStreetPartOfAnAddressButKeepsTheArea() {
+        assertThat(Redaction.redact("ATM at House 12, Road 5, Dhanmondi is down; also Flat 3B, plot #7/A in Uttara"))
+                .isEqualTo("ATM at [address], Dhanmondi is down; also [address] in Uttara");
+        assertThat(Redaction.redact("বাড়ি ১২, রোড ৫, ধানমন্ডি এর প্রিন্টার নষ্ট"))
+                .isEqualTo("[address], ধানমন্ডি এর প্রিন্টার নষ্ট");
+        assertThat(Redaction.redact("Holding no. 45, Lane 3 near the market")).isEqualTo("[address] near the market");
+    }
+
+    @Test
+    void keepsAddressesForAFeatureThatNeedsThem() {
+        assertThat(Redaction.redact("Banani Road 11, call 01712-345678", true))
+                .isEqualTo("Banani Road 11, call [phone]");
+    }
+
+    @Test
+    void doesNotMistakeOtherWordsForAnAddress() {
+        var text = "Printer on the 3rd floor, Sector 7 office, 5 houses wired, roadside cabinet 2, flat rate 500";
+        assertThat(Redaction.redact(text)).isEqualTo(text);
+    }
 }

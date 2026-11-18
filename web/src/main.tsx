@@ -88,6 +88,7 @@ function App() {
           { path: "/work-orders", element: <WorkOrdersPage /> },
           // Loaded when first opened: the list is what everyone sees first.
           { path: "/work-orders/new", lazy: () => import("./pages/NewWorkOrderPage").then((m) => ({ Component: m.NewWorkOrderPage })) },
+          { path: "/ai-usage", lazy: () => import("./pages/AiUsagePage").then((m) => ({ Component: m.AiUsagePage })) },
           { path: "/work-orders/:id", lazy: () => import("./pages/WorkOrderPage").then((m) => ({ Component: m.WorkOrderPage })) },
           { path: "*", element: <Navigate to="/work-orders" replace /> },
         ],

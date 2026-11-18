@@ -1,0 +1,6 @@
+{
+  "model" : "gemini-flash-lite-latest",
+  "text" : "{\n  \"checklist\": [\n    \"Inspect the issue reported by the branch\",\n    \"Perform necessary repairs\",\n    \"Test functionality and confirm resolution\"\n  ],\n  \"endsAt\": \"2026-11-19T17:00\",\n  \"siteAddress\": null,\n  \"skills\": [],\n  \"startsAt\": \"2026-11-19T09:00\",\n  \"title\": \"General assistance requested\",\n  \"urgency\": \"NORMAL\"\n}",
+  "inputTokens" : 1001,
+  "outputTokens" : 120
+}

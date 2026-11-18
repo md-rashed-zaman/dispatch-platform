@@ -1,0 +1,6 @@
+{
+  "model" : "gemini-flash-lite-latest",
+  "text" : "{\n  \"confidence\": 0.2,\n  \"items\": [\n    {\n      \"evidence\": \"The photo shows several devices displayed on stands in what appears to be a showroom or testing area, not mounted beside a main door.\",\n      \"position\": 0,\n      \"verdict\": \"NOT_MET\"\n    }\n  ]\n}",
+  "inputTokens" : 1722,
+  "outputTokens" : 79
+}

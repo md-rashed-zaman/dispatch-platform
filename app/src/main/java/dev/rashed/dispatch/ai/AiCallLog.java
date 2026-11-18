@@ -38,6 +38,7 @@ class AiCallLog {
             String error,
             Integer inputTokens,
             Integer outputTokens,
+            java.math.BigDecimal costUsd,
             long latencyMillis) {}
 
     private final JdbcClient jdbc;
@@ -52,9 +53,9 @@ class AiCallLog {
     void record(Entry entry) {
         ownTransaction.executeWithoutResult(status -> jdbc.sql("""
                         INSERT INTO ai_call (tenant_id, feature, prompt_version, model, outcome, input_redacted, output,
-                                             error, input_tokens, output_tokens, latency_ms)
+                                             error, input_tokens, output_tokens, cost_usd, latency_ms)
                         VALUES (:tenant, :feature, :version, :model, :outcome, :input, :output,
-                                :error, :inputTokens, :outputTokens, :latency)
+                                :error, :inputTokens, :outputTokens, :cost, :latency)
                         """)
                 .param("tenant", entry.tenantId())
                 .param("feature", entry.feature())
@@ -66,6 +67,7 @@ class AiCallLog {
                 .param("error", entry.error())
                 .param("inputTokens", entry.inputTokens())
                 .param("outputTokens", entry.outputTokens())
+                .param("cost", entry.costUsd())
                 .param("latency", Math.toIntExact(Math.min(entry.latencyMillis(), Integer.MAX_VALUE)))
                 .update());
     }

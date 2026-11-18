@@ -1,0 +1,6 @@
+{
+  "model" : "gemini-flash-lite-latest",
+  "text" : "{\n  \"confidence\": 0.2,\n  \"items\": [\n    {\n      \"evidence\": \"The photo shows promotional product cutouts of an indoor and outdoor AC unit rather than a mounted unit on a wall.\",\n      \"position\": 0,\n      \"verdict\": \"NOT_MET\"\n    }\n  ]\n}",
+  "inputTokens" : 1780,
+  "outputTokens" : 76
+}

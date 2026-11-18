@@ -1,0 +1,6 @@
+{
+  "model" : "gemini-flash-lite-latest",
+  "text" : "{\n  \"checklist\": [\n    \"Inspect generator starting mechanism\",\n    \"Test generator during simulated power outage\",\n    \"Provide photo of the repaired generator control panel\"\n  ],\n  \"endsAt\": \"2026-11-18T14:00\",\n  \"siteAddress\": \"Motijheel head office\",\n  \"skills\": [\n    \"generator\"\n  ],\n  \"startsAt\": \"2026-11-18T10:00\",\n  \"title\": \"Generator won't start during load shedding\",\n  \"urgency\": \"URGENT\"\n}",
+  "inputTokens" : 1008,
+  "outputTokens" : 143
+}

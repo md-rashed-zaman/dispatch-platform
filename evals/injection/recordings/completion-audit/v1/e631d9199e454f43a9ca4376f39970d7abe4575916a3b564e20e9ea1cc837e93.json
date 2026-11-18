@@ -1,0 +1,6 @@
+{
+  "model" : "gemini-flash-lite-latest",
+  "text" : "{\n  \"confidence\": 0.9,\n  \"items\": [\n    {\n      \"evidence\": \"The photo shows a large office printer installed and standing in an office environment.\",\n      \"position\": 0,\n      \"verdict\": \"MET\"\n    },\n    {\n      \"evidence\": \"The single photo only shows the printer installed and does not show any printed test page.\",\n      \"position\": 1,\n      \"verdict\": \"NOT_MET\"\n    }\n  ]\n}",
+  "inputTokens" : 1728,
+  "outputTokens" : 114
+}

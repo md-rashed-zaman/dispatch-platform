@@ -7,6 +7,7 @@ import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -239,7 +240,18 @@ class AiGatewayTests {
         TenantContext.runAs(tenant, () -> {
             for (int i = 0; i < 100; i++) {
                 calls.record(new AiCallLog.Entry(
-                        tenant, "skill-suggestions", "v1", LITE, AiCallLog.Outcome.OK, "{}", "{}", null, 1, 1, 1));
+                        tenant,
+                        "skill-suggestions",
+                        "v1",
+                        LITE,
+                        AiCallLog.Outcome.OK,
+                        "{}",
+                        "{}",
+                        null,
+                        1,
+                        1,
+                        null,
+                        1));
             }
         });
 
@@ -295,6 +307,45 @@ class AiGatewayTests {
                 () -> transaction.execute(
                         status -> jdbc.queryForObject("select count(*) from ai_call", Integer.class)));
         assertThat(visible).isZero();
+    }
+
+    @Test
+    void eachCallsCostIsStoredAndOnlyTheCompanyAdminSeesIt() throws Exception {
+        given(model.call(any(Prompt.class))).willReturn(reply("{\"skills\": [\"cctv\"]}"));
+        ask("Camera offline", "No signal");
+
+        // 120 input and 8 output tokens at 0.10 and 0.40 USD per million
+        assertThat(rows())
+                .singleElement()
+                .satisfies(row -> assertThat(row.get("cost_usd")).isEqualTo(new java.math.BigDecimal("0.00001520")));
+        var admin =
+                TestTokens.token(c -> c.claim("roles", List.of("CLIENT_ADMIN")).claim("tenant_id", tenant.toString()));
+        mvc.perform(get("/api/ai/usage?days=7").header(HttpHeaders.AUTHORIZATION, "Bearer " + admin))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.today.calls").value(1))
+                .andExpect(jsonPath("$.today.limit").value(100))
+                .andExpect(jsonPath("$.totals.calls").value(1))
+                .andExpect(jsonPath("$.totals.costUsd").value(0.0000152))
+                .andExpect(jsonPath("$.features[0].feature").value("skill-suggestions"))
+                .andExpect(jsonPath("$.features[0].inputTokens").value(120))
+                .andExpect(jsonPath("$.days.length()").value(7))
+                .andExpect(jsonPath("$.days[6].calls").value(1));
+
+        var other = UUID.randomUUID();
+        jdbc.update("insert into company (id, name, slug) values (?, 'Other', ?)", other, "company-" + other);
+        var otherAdmin =
+                TestTokens.token(c -> c.claim("roles", List.of("CLIENT_ADMIN")).claim("tenant_id", other.toString()));
+        mvc.perform(get("/api/ai/usage").header(HttpHeaders.AUTHORIZATION, "Bearer " + otherAdmin))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totals.calls").value(0))
+                .andExpect(jsonPath("$.days.length()").value(30));
+
+        var dispatcher =
+                TestTokens.token(c -> c.claim("roles", List.of("DISPATCHER")).claim("tenant_id", tenant.toString()));
+        mvc.perform(get("/api/ai/usage").header(HttpHeaders.AUTHORIZATION, "Bearer " + dispatcher))
+                .andExpect(status().isForbidden());
+        mvc.perform(get("/api/ai/usage?days=0").header(HttpHeaders.AUTHORIZATION, "Bearer " + admin))
+                .andExpect(status().isBadRequest());
     }
 
     private SkillSuggestions.Suggestion ask(String title, String description) {

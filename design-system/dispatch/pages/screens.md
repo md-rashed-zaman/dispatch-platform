@@ -1,6 +1,6 @@
 # Screens (overrides: none; layout specs)
 
-Three screens for a bank's dispatcher (roles DISPATCHER, CLIENT_ADMIN). Technicians use the phone app (not built here).
+Three screens for a bank's dispatcher (roles DISPATCHER, CLIENT_ADMIN), and one for the company admin (CLIENT_ADMIN). Technicians use the phone app (not built here).
 
 ## 1. Work orders `/work-orders` (home)
 
@@ -109,3 +109,35 @@ Suggested by AI: [+ printer] [+ networking]       (role=status)
 - **Empty:** "No skill on our list fits. Type the skills yourself." **Unavailable** (`available: false`, or the request failed): "Suggestions aren't available right now. Type the skills yourself." Muted text, never red: nothing is wrong with the form.
 - **Accessibility:** the result line is one `role="status"` `aria-atomic` message ("2 suggested skills: printer, networking"); focus stays where it is; each pill's accessible name is "Add skill printer".
 - Changing the title or description clears old suggestions, so they never describe different text.
+
+## 4. AI usage `/ai-usage` (company admins, step 3.6)
+
+```
+AI usage                                                    [7 days][30 days][90 days]
+What your company's AI features used, at the provider's list price. ...
+┌ TODAY ──────────┐ ┌ COST, 30 DAYS ─┐ ┌ CALLS, 30 DAYS ┐ ┌ NO AI ANSWER ───────────┐
+│ 23 of 100 calls │ │ $0.0017        │ │ 41             │ │ 26                      │
+│ ▓▓▓▓░░░░░░░░░░  │ │ At list price; │ │ 13,572 tokens  │ │ 23 failed, 3 not sent;  │
+│ 77 left today   │ │ the free tier  │ │                │ │ the forms carried on    │
+└─────────────────┘ └────────────────┘ └────────────────┘ └─────────────────────────┘
+┌ CALLS PER DAY (UTC) ─────────────────────────────────────────────────────────────┐
+│ Busiest day: 17 Nov, 39 calls          (hover or focus a bar: date, calls, cost) │
+│                                                                    █             │
+│ 20 Oct                         3 Nov                         18 Nov █ ▁          │
+│ ▸ Show as a table                                                                │
+└──────────────────────────────────────────────────────────────────────────────────┘
+┌ BY FEATURE ───────────────────────────────────────────────────────────────────────┐
+│ Feature                 Calls  Failed  Not sent  Tokens in  Tokens out      Cost │
+│ Describe the job           11       4         1      5,961         914  $0.00096 │
+└───────────────────────────────────────────────────────────────────────────────────┘
+Days are UTC days, the same days the daily limit counts (it resets at 6:00 in Dhaka). ...
+```
+
+- From `GET /api/ai/usage?days=7|30|90`; the period is in the address (`?days=7`), 30 by default. The app bar shows "Work orders" and "AI usage" links to company admins only; on phones the brand keeps its mark and drops the word so the bar fits.
+- **Today** is a `role="meter"` bar against the daily limit with words below: "77 left today", amber from 80% ("close to the limit"), red at the limit ("Limit reached: AI is off until tomorrow, forms work as usual"). Never color alone.
+- **Money:** amounts under a cent keep two significant digits (`$0.00096`), because `$0.00` would read as free; a cent and up has two decimals. All numbers in Fira Code with tabular figures, right-aligned in tables.
+- **Chart:** one bar per UTC day, a single blue (one series, so no legend); zero days draw nothing. Each bar is a button whose accessible name has the numbers ("17 Nov: 39 calls, $0.0013"); hover or focus writes them in the line above (`aria-live="polite"`). "Show as a table" gives every day as text, so nothing is only in the picture.
+- **By feature:** features in the app's words ("Describe the job", "AI check of finished work"). Semantic table on desktop; on phones one card per feature with a 3-column `dl`.
+- **Empty:** "No AI calls in the last 30 days." and what starts them. **Not an admin:** "Only your company's admins can see AI usage." and no period switch.
+- Skeletons in the shape of the tiles, chart and table while loading.
+

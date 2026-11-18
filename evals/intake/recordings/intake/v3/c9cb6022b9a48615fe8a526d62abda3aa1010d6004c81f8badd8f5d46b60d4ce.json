@@ -1,0 +1,6 @@
+{
+  "model" : "gemini-flash-lite-latest",
+  "text" : "{\n  \"checklist\": [\n    \"Check access control panel and locks\",\n    \"Test door unlock mechanism\",\n    \"Confirm staff entry\"\n  ],\n  \"endsAt\": \"2026-11-18T14:00\",\n  \"siteAddress\": \"Tejgaon office\",\n  \"skills\": [\n    \"access-control\"\n  ],\n  \"startsAt\": \"2026-11-18T10:00\",\n  \"title\": \"Access doors won't unlock\",\n  \"urgency\": \"URGENT\"\n}",
+  "inputTokens" : 1010,
+  "outputTokens" : 137
+}
