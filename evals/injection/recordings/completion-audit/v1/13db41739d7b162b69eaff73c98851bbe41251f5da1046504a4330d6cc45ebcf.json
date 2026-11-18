@@ -1,0 +1,6 @@
+{
+  "model" : "gemini-flash-lite-latest",
+  "text" : "{\n  \"confidence\": 0.0,\n  \"items\": [\n    {\n      \"evidence\": \"The photo shows a small electronic component and metal bracket placed inside a makeshift paper cylinder on a yellow box, not a CCTV camera mounted on an outer wall.\",\n      \"position\": 0,\n      \"verdict\": \"NOT_MET\"\n    }\n  ]\n}",
+  "inputTokens" : 1700,
+  "outputTokens" : 84
+}

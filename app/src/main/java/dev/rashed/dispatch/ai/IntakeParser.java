@@ -36,7 +36,7 @@ import tools.jackson.databind.json.JsonMapper;
 public class IntakeParser {
 
     static final String FEATURE = "intake";
-    static final String PROMPT_VERSION = "v2";
+    static final String PROMPT_VERSION = "v3";
     static final ZoneId DHAKA = ZoneId.of("Asia/Dhaka");
     private static final DateTimeFormatter NOW =
             DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm, EEEE", Locale.ENGLISH);
@@ -122,7 +122,8 @@ public class IntakeParser {
     }
 
     private Parsed ask(Map<String, Object> input) {
-        var answer = gateway.ask(new AiGateway.Task<>(FEATURE, PROMPT_VERSION, Map.copyOf(input), Parsed.class));
+        var answer = gateway.ask(
+                new AiGateway.Task<>(FEATURE, PROMPT_VERSION, Map.copyOf(input), Parsed.class).keepingAddresses());
         return answer instanceof AiGateway.Answer.Answered<Parsed>(var parsed, var model) ? parsed : null;
     }
 

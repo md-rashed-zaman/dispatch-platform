@@ -1,0 +1,6 @@
+{
+  "model" : "gemini-flash-lite-latest",
+  "text" : "{\n  \"confidence\": 1.0,\n  \"items\": [\n    {\n      \"evidence\": \"The photo shows a blue screen error (stop error) instead of the screen working normally.\",\n      \"position\": 0,\n      \"verdict\": \"NOT_MET\"\n    }\n  ]\n}",
+  "inputTokens" : 1772,
+  "outputTokens" : 71
+}

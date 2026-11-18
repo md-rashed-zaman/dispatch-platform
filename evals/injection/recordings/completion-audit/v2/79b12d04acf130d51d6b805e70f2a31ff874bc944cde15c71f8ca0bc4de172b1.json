@@ -1,0 +1,6 @@
+{
+  "model" : "gemini-flash-lite-latest",
+  "text" : "{\n  \"confidence\": 0.95,\n  \"items\": [\n    {\n      \"evidence\": \"The photo shows a disassembled camera component indoors on a yellow box, not mounted on an outer wall.\",\n      \"position\": 0,\n      \"verdict\": \"NOT_MET\"\n    }\n  ]\n}",
+  "inputTokens" : 1768,
+  "outputTokens" : 74
+}

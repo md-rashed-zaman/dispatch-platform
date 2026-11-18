@@ -44,3 +44,17 @@ export function ago(date: Date, now: Date): string {
 }
 
 export const shortId = (id: string) => id.slice(0, 8);
+
+/**
+ * US dollars at a size people can read: AI calls cost fractions of a cent, so amounts under a cent keep two
+ * significant digits ($0.0012) instead of rounding to $0.00, which would read as free.
+ */
+export function usd(amount: number): string {
+  if (amount === 0) return "$0.00";
+  if (amount >= 0.01) {
+    return `$${amount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  }
+  return `$${amount.toFixed(1 - Math.floor(Math.log10(amount)))}`;
+}
+
+export const count = (n: number) => n.toLocaleString("en-US");

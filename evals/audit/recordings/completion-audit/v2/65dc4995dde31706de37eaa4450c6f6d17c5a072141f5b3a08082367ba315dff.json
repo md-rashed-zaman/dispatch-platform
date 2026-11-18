@@ -1,0 +1,6 @@
+{
+  "model" : "gemini-flash-lite-latest",
+  "text" : "{\n  \"confidence\": 0.95,\n  \"items\": [\n    {\n      \"evidence\": \"The photo shows multiple ATMs at their location, but the screens are dark and it is not possible to determine if they are in service.\",\n      \"position\": 0,\n      \"verdict\": \"UNCLEAR\"\n    },\n    {\n      \"evidence\": \"No photo of a test withdrawal receipt is provided.\",\n      \"position\": 1,\n      \"verdict\": \"NOT_MET\"\n    }\n  ]\n}",
+  "inputTokens" : 1818,
+  "outputTokens" : 121
+}

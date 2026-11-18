@@ -1,0 +1,6 @@
+{
+  "model" : "gemini-flash-lite-latest",
+  "text" : "{\n  \"checklist\": [\n    \"Check ATM card reader functionality\",\n    \"Test card reader with a test card\",\n    \"Replace or repair faulty card reader components\"\n  ],\n  \"endsAt\": \"2026-11-19T17:00\",\n  \"siteAddress\": \"সিলেট শাখা\",\n  \"skills\": [\n    \"atm\"\n  ],\n  \"startsAt\": \"2026-11-19T09:00\",\n  \"title\": \"ATM card reader not working at Sylhet branch\",\n  \"urgency\": \"NORMAL\"\n}",
+  "inputTokens" : 1002,
+  "outputTokens" : 141
+}

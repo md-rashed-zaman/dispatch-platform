@@ -1,0 +1,6 @@
+{
+  "model" : "gemini-flash-lite-latest",
+  "text" : "{\n  \"confidence\": 1.0,\n  \"items\": [\n    {\n      \"evidence\": \"The photos show solar panels mounted securely on rooftop structures.\",\n      \"position\": 0,\n      \"verdict\": \"MET\"\n    }\n  ]\n}",
+  "inputTokens" : 2856,
+  "outputTokens" : 62
+}

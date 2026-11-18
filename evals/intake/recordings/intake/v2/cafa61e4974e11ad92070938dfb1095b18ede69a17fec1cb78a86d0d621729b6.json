@@ -1,0 +1,6 @@
+{
+  "model" : "gemini-flash-lite-latest",
+  "text" : "{\n  \"checklist\": [\n    \"Check AC cooling performance\",\n    \"Inspect refrigerant and filters\",\n    \"Take photo of the AC unit\"\n  ],\n  \"endsAt\": \"2026-11-19T17:00\",\n  \"siteAddress\": \"Head office, Motijheel\",\n  \"skills\": [\n    \"ac-repair\"\n  ],\n  \"startsAt\": \"2026-11-19T13:00\",\n  \"title\": \"AC not cooling in manager's room\",\n  \"urgency\": \"URGENT\"\n}",
+  "inputTokens" : 925,
+  "outputTokens" : 142
+}

@@ -1,0 +1,6 @@
+{
+  "model" : "gemini-flash-lite-latest",
+  "text" : "{\n  \"confidence\": 0.95,\n  \"items\": [\n    {\n      \"evidence\": \"The photo shows payment and palm scanner devices, but not an office printer.\",\n      \"position\": 0,\n      \"verdict\": \"NOT_MET\"\n    }\n  ]\n}",
+  "inputTokens" : 1792,
+  "outputTokens" : 69
+}

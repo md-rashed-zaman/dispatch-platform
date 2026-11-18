@@ -43,14 +43,24 @@ class AiMetrics {
                 .increment(input);
         counter("dispatch.ai.tokens", "Tokens used", feature, model, tenantId, "kind", "output")
                 .increment(output);
-        if (prices != null) {
-            var usd = prices.inputPricePerMillion()
-                    .multiply(BigDecimal.valueOf(input))
-                    .add(prices.outputPricePerMillion().multiply(BigDecimal.valueOf(output)))
-                    .divide(MILLION, MathContext.DECIMAL64);
+        var usd = cost(reply, prices);
+        if (usd != null) {
             counter("dispatch.ai.cost.usd", "Cost at list price, USD", feature, model, tenantId)
                     .increment(usd.doubleValue());
         }
+    }
+
+    /** What a reply cost at list price; null without a reply or a price. */
+    static BigDecimal cost(ModelReply reply, AiProperties.Model prices) {
+        if (reply == null || prices == null) {
+            return null;
+        }
+        int input = reply.inputTokens() == null ? 0 : reply.inputTokens();
+        int output = reply.outputTokens() == null ? 0 : reply.outputTokens();
+        return prices.inputPricePerMillion()
+                .multiply(BigDecimal.valueOf(input))
+                .add(prices.outputPricePerMillion().multiply(BigDecimal.valueOf(output)))
+                .divide(MILLION, MathContext.DECIMAL64);
     }
 
     /** A feature gave up on AI and used its non-AI path. */

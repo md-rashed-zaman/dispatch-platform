@@ -1,0 +1,6 @@
+{
+  "model" : "gemini-flash-lite-latest",
+  "text" : "{\n  \"confidence\": 0.95,\n  \"items\": [\n    {\n      \"evidence\": \"The photo shows a cracked smartphone on a surface instead of an ATM in service.\",\n      \"position\": 0,\n      \"verdict\": \"NOT_MET\"\n    }\n  ]\n}",
+  "inputTokens" : 1807,
+  "outputTokens" : 70
+}

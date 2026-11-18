@@ -75,13 +75,28 @@ class AiGateway {
      * What a feature asks for.
      *
      * @param feature also the prompt folder: {@code prompts/<feature>/<promptVersion>.st}
-     * @param input the user's text and other values for the template; strings are redacted before use
+     * @param input the user's text and other values for the template; strings are redacted before use, and
+     *     can't contain the angle brackets prompts use to fence data off
+     * @param keepAddresses true only for a feature that needs the street address (intake reads it out)
      */
     record Task<T>(
-            String feature, String promptVersion, Map<String, Object> input, Class<T> answerType, List<Image> images) {
+            String feature,
+            String promptVersion,
+            Map<String, Object> input,
+            Class<T> answerType,
+            List<Image> images,
+            boolean keepAddresses) {
 
         Task(String feature, String promptVersion, Map<String, Object> input, Class<T> answerType) {
-            this(feature, promptVersion, input, answerType, List.of());
+            this(feature, promptVersion, input, answerType, List.of(), false);
+        }
+
+        Task(String feature, String promptVersion, Map<String, Object> input, Class<T> answerType, List<Image> images) {
+            this(feature, promptVersion, input, answerType, images, false);
+        }
+
+        Task<T> keepingAddresses() {
+            return new Task<>(feature, promptVersion, input, answerType, images, true);
         }
     }
 
@@ -98,7 +113,7 @@ class AiGateway {
     <T> Answer<T> ask(Task<T> task) {
         var tenant = TenantContext.current()
                 .orElseThrow(() -> new IllegalStateException("AI calls are made on behalf of a tenant"));
-        var input = redacted(task.input());
+        var input = redacted(task.input(), task.keepAddresses());
         var audited = new LinkedHashMap<String, Object>(input);
         if (!task.images().isEmpty()) {
             audited.put("images", imageHashes(task.images())); // which photos, by hash: the audit row stays small
@@ -276,10 +291,19 @@ class AiGateway {
                 .collect(java.util.stream.Collectors.joining(","));
     }
 
-    private static Map<String, Object> redacted(Map<String, Object> input) {
+    private static Map<String, Object> redacted(Map<String, Object> input, boolean keepAddresses) {
         var result = new LinkedHashMap<String, Object>();
-        input.forEach((key, value) -> result.put(key, value instanceof String text ? Redaction.redact(text) : value));
+        input.forEach((key, value) -> result.put(
+                key, value instanceof String text ? unfenced(Redaction.redact(text, keepAddresses)) : value));
         return result;
+    }
+
+    /**
+     * Prompts fence untrusted text in tags ({@code <notes>...</notes>}); text that brings its own tags could close
+     * the fence and pose as instructions. Look-alike brackets keep the meaning for the model and break the trick.
+     */
+    static String unfenced(String text) {
+        return text.replace('<', '‹').replace('>', '›');
     }
 
     /** Backoff with jitter (1 s, 2 s, ... +-25%), never past the deadline. */
@@ -325,6 +349,10 @@ class AiGateway {
                         error,
                         reply == null ? null : reply.inputTokens(),
                         reply == null ? null : reply.outputTokens(),
+                        // A replayed answer cost nothing now; its recorded tokens are kept for the audit only.
+                        outcome == AiCallLog.Outcome.REPLAYED
+                                ? null
+                                : AiMetrics.cost(reply, ai.models().get(model)),
                         millis));
             } catch (RuntimeException e) {
                 // The audit is important, but not more important than answering: the database being down

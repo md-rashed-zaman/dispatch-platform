@@ -195,7 +195,7 @@ dispatch:
       daily-limit: 900                # of the free tier's 1,000 a day, leaving room for work orders
   review:
     auto-approve: ${AI_AUTO_APPROVE:true}   # off: every job goes to a person, with the AI's assessment attached
-    threshold: 0.8                    # from the eval: no false approval, 30 of 32 done jobs automated (evals/results/audit.md)
+    threshold: 0.9                    # from the eval with prompt v2: no false approval, 29 of 32 done jobs automated (evals/results/audit.md)
     max-photos: 6                     # about 1,000 tokens each
   instance-name: ${INSTANCE_NAME:${HOSTNAME:local}}   # in logs, to see which instance did what
   web:

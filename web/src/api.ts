@@ -119,3 +119,22 @@ export type StatusChange = {
   technicianId: string | null;
   occurredAt: string;
 };
+
+/** `GET /api/ai/usage`: a company's AI calls and their cost at list price, per UTC day and per feature. */
+export type AiUsage = {
+  from: string;
+  to: string;
+  today: { calls: number; limit: number };
+  totals: AiUsageCounts;
+  days: { date: string; calls: number; costUsd: number }[];
+  features: (AiUsageCounts & { feature: string })[];
+};
+
+type AiUsageCounts = {
+  calls: number;
+  failed: number;
+  skipped: number;
+  inputTokens: number;
+  outputTokens: number;
+  costUsd: number;
+};

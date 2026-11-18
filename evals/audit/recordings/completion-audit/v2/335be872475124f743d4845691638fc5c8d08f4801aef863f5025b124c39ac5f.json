@@ -1,0 +1,6 @@
+{
+  "model" : "gemini-flash-lite-latest",
+  "text" : "{\n  \"confidence\": 1.0,\n  \"items\": [\n    {\n      \"evidence\": \"The photo shows a small electronic circuit board and bracket resting on a yellow container, not an ATM in service at its location.\",\n      \"position\": 0,\n      \"verdict\": \"NOT_MET\"\n    }\n  ]\n}",
+  "inputTokens" : 1769,
+  "outputTokens" : 78
+}

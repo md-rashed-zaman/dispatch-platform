@@ -24,7 +24,7 @@ import org.springframework.stereotype.Service;
 public class CompletionCheck {
 
     static final String FEATURE = "completion-audit";
-    public static final String PROMPT_VERSION = "v1";
+    public static final String PROMPT_VERSION = "v2";
 
     public enum Verdict {
         MET,
@@ -68,6 +68,11 @@ public class CompletionCheck {
     }
 
     public Optional<Assessment> check(Input input) {
+        return check(input, PROMPT_VERSION);
+    }
+
+    /** With another prompt version: for evals that compare versions before one ships. */
+    public Optional<Assessment> check(Input input, String promptVersion) {
         var variables = new HashMap<String, Object>();
         variables.put("title", input.title());
         variables.put("description", input.description());
@@ -82,7 +87,7 @@ public class CompletionCheck {
                 .map(p -> new AiGateway.Image(p.contentType(), p.bytes()))
                 .toList();
 
-        var answer = gateway.ask(new AiGateway.Task<>(FEATURE, PROMPT_VERSION, variables, Answer.class, images));
+        var answer = gateway.ask(new AiGateway.Task<>(FEATURE, promptVersion, variables, Answer.class, images));
         if (!(answer instanceof AiGateway.Answer.Answered<Answer>(var parsed, var model))) {
             return Optional.empty();
         }

@@ -1,0 +1,6 @@
+{
+  "model" : "gemini-flash-lite-latest",
+  "text" : "{\n  \"checklist\": [\n    \"Inspect electrical sockets in the kitchen\",\n    \"Repair or replace faulty sockets\",\n    \"Test power supply and ensure safety\"\n  ],\n  \"endsAt\": \"2026-11-18T14:00\",\n  \"siteAddress\": \"Kawran Bazar office kitchen\",\n  \"skills\": [\n    \"electrical\"\n  ],\n  \"startsAt\": \"2026-11-18T10:00\",\n  \"title\": \"Electrical sockets sparking in kitchen\",\n  \"urgency\": \"URGENT\"\n}",
+  "inputTokens" : 1008,
+  "outputTokens" : 139
+}

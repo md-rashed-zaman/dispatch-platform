@@ -1,0 +1,6 @@
+{
+  "model" : "gemini-flash-lite-latest",
+  "text" : "{\n  \"checklist\": [\n    \"Inspect AC indoor unit for water leakage\",\n    \"Clean drainage pipe and check for blockages\",\n    \"Test AC operation after repair\"\n  ],\n  \"endsAt\": \"2026-11-19T17:00\",\n  \"siteAddress\": \"মতিঝিল প্রধান কার্যালয়\",\n  \"skills\": [\n    \"ac-repair\"\n  ],\n  \"startsAt\": \"2026-11-19T13:00\",\n  \"title\": \"Water leaking from AC at Motijheel Head Office\",\n  \"urgency\": \"NORMAL\"\n}",
+  "inputTokens" : 1007,
+  "outputTokens" : 148
+}

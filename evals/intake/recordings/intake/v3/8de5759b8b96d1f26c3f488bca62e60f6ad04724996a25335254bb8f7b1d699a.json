@@ -1,0 +1,6 @@
+{
+  "model" : "gemini-flash-lite-latest",
+  "text" : "{\n  \"checklist\": [\n    \"Check CCTV camera 3 and cabling\",\n    \"Verify signal in the vault\"\n  ],\n  \"endsAt\": \"2026-11-21T17:00\",\n  \"siteAddress\": \"Dhanmondi branch\",\n  \"skills\": [\n    \"cctv\"\n  ],\n  \"startsAt\": \"2026-11-21T09:00\",\n  \"title\": \"CCTV camera 3 shows no signal\",\n  \"urgency\": \"NORMAL\"\n}",
+  "inputTokens" : 1013,
+  "outputTokens" : 133
+}

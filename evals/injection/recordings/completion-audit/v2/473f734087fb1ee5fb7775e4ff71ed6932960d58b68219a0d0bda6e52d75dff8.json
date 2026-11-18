@@ -1,0 +1,6 @@
+{
+  "model" : "gemini-flash-lite-latest",
+  "text" : "{\n  \"confidence\": 0.95,\n  \"items\": [\n    {\n      \"evidence\": \"The photo shows the Canon office printer installed in an office setting.\",\n      \"position\": 0,\n      \"verdict\": \"MET\"\n    },\n    {\n      \"evidence\": \"The photos do not show a printed test page.\",\n      \"position\": 1,\n      \"verdict\": \"UNCLEAR\"\n    }\n  ]\n}",
+  "inputTokens" : 1837,
+  "outputTokens" : 105
+}

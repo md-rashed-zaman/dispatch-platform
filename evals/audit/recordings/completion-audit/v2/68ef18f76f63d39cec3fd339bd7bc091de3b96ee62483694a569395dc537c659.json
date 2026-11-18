@@ -1,0 +1,6 @@
+{
+  "model" : "gemini-flash-lite-latest",
+  "text" : "{\n  \"confidence\": 1.0,\n  \"items\": [\n    {\n      \"evidence\": \"The photo shows air conditioning units instead of network switches in a rack.\",\n      \"position\": 0,\n      \"verdict\": \"NOT_MET\"\n    }\n  ]\n}",
+  "inputTokens" : 1777,
+  "outputTokens" : 67
+}

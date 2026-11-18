@@ -1,0 +1,6 @@
+{
+  "model" : "gemini-flash-lite-latest",
+  "text" : "{\n  \"checklist\": [\n    \"Configure access card for new staff\",\n    \"Test access card at the entrance\",\n    \"Hand over the card to the staff member\"\n  ],\n  \"endsAt\": \"2026-11-22T17:00\",\n  \"siteAddress\": \"Tejgaon office\",\n  \"skills\": [\n    \"access-control\"\n  ],\n  \"startsAt\": \"2026-11-22T09:00\",\n  \"title\": \"Access card setup for new staff\",\n  \"urgency\": \"NORMAL\"\n}",
+  "inputTokens" : 1010,
+  "outputTokens" : 142
+}
