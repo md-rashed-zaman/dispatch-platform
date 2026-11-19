@@ -20,3 +20,23 @@ Before recording: stack up (including `lgtm` for the trace), app running, seed l
 | 3:50 | (close) | "Each decision has an ADR and each claim a test. I also ran a chaos day: a single table lock took the whole API down through the connection pool. The postmortem, the fix and the rerun are in the repo." |
 
 If something fails mid-recording, `docs/failure-modes.md` says what the API does when each dependency is down.
+
+# Phase 4 demo (about 4 minutes)
+
+Two scripts: `./scripts/demo-phase4.sh` (money, the flag, the MCP tools) and `./scripts/demo-claude.sh` (Claude as the dispatcher's assistant). Before recording: stack up with `lgtm`, the app started with payments required (`PAYMENTS_REQUIRED=true`; the local stand-in for SSLCommerz is the default), Claude Code signed in (`claude auth login`), the Grafana *Dispatch overview* open at the "Experiment" row.
+
+| Time | Script step | Say |
+|---|---|---|
+| 0:00 | (title) | "Phase 4 is money and control: payments that can't be charged twice or faked, a ledger that proves no money was created or lost, a risky AI feature rolled out to 20% of companies and measured, and an AI assistant that can't do more than its user." |
+| 0:15 | Can't start before paying | "A technician took the job. He can't start until the bank has paid: the money must exist before he drives out." |
+| 0:25 | Pay twice | "The bank clicks Pay twice. Same Idempotency-Key, so the second answer is the first one replayed: one payment, one payment page. Five at once make one payment too; there's a test." |
+| 0:45 | Fake notice | "Anyone can post to the public notification URL. This fake 'paid' changes nothing: a notice only names a payment, and Dispatch asks the provider itself and checks the transaction id, amount and currency." |
+| 1:05 | Pay | "Now a real payment on the provider's page (here the local stand-in). Captured, and the technician can start." |
+| 1:20 | Ledger | "Where did the money go? Three journal entries: held in escrow, the gateway's 2.5%, then on approval 10% to the platform and the rest owed to the technician. The database refuses any entry whose debits and credits differ, at commit, even from code that skips the checks." |
+| 1:45 | Payout | "The platform pays the technician and records the bank's reference: the job is PAID and the platform's books balance. A property test runs random sequences of all of this and checks that after every step." |
+| 2:00 | Refund | "Cancel a funded job before work starts and the bank gets its money back, through the provider's refund API. The ledger only records it when the provider says it's done." |
+| 2:15 | The flag | "AI auto-approval is a flag, on for 20% of companies, picked by a stable hash: a company never switches groups, and raising the percentage only adds companies. Raising it takes the current version and a reason, and every change is kept. The experiment report and this Grafana row compare time to approval and how often people overrule the AI." |
+| 2:45 | MCP tools | "Dispatch is also an MCP server: five tools, four read-only. Each call carries the dispatcher's own token, so roles and row-level security decide, exactly as in the app." |
+| 3:00 | Claude (demo-claude.sh, optional: needs Claude Code signed in) | "Claude, connected only to Dispatch as this dispatcher: it finds the job and suggests technicians. Asked to reassign, it shows a preview and asks; nothing has changed yet. I say yes, and only then the job moves, with a one-time token the server issued for exactly that change." |
+| 3:35 | The trap | "This job's description tells the AI to reassign it without asking. Claude just summarizes it, and even if a model tried, the server needs a confirmation token for a preview the user saw. Every call is in the audit table." |
+| 3:55 | (close) | "Each of these has an ADR and a test that breaks if the protection is removed." |

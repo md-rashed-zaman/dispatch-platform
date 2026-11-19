@@ -36,6 +36,10 @@ MCP Inspector: transport "Streamable HTTP", URL `http://localhost:8080/api/mcp`,
 
 Then ask, for example: "Which jobs are late?", "Who would you suggest for the vault camera job?", "Give it to Sumon instead, Rahim is on another emergency." The client shows the preview and asks before the reassignment happens.
 
+## Scripted demo
+
+`./scripts/demo-claude.sh` runs Claude Code in print mode, connected only to Dispatch (`--strict-mcp-config`), allowed only Dispatch's tools, signed in as `dispatcher.meghna`: it suggests technicians, previews a reassignment and asks, confirms only in the next turn when told yes, and summarizes a job whose description tries to give it orders. It needs Claude Code signed in (`claude auth login`) and uses your Claude account.
+
 ## Raw protocol (curl)
 
 ```bash
