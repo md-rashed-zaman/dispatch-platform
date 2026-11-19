@@ -49,7 +49,7 @@ final class WorkOrders {
                 WorkOrder::publish,
                 WorkOrder::route,
                 w -> w.assign(technicianId),
-                WorkOrder::start,
+                w -> w.start(false),
                 w -> w.submit(null),
                 WorkOrder::approve,
                 WorkOrder::markPaid);

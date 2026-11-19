@@ -9,7 +9,7 @@ Provider: **SSLCommerz** hosted checkout (sandbox first). One integration covers
 1. **The browser is never the source of truth.** The customer's return to `success_url` only shows "Checking your payment…". Only a server-to-server check marks a payment captured: the Order Validation API with the `val_id`, or the Transaction Query API with our `tran_id`.
 2. **Check what you asked for.** A capture counts only if the provider says `VALID` (or `VALIDATED`: valid, asked before) **and** `tran_id`, amount and currency match our payment row. Anything else is logged and the payment stays as it was.
 3. **IPN, redirect and polling all funnel into one idempotent `confirm(tranId)`.** Whichever arrives first does the work; the rest find the payment already final and change nothing (state change by conditional update, unique `val_id`).
-4. **Unknown is a state, not an error.** A timeout means "we don't know yet", never "failed": the payment stays as it is and is resolved by asking the provider (status query), never by trying again with a new transaction.
+4. **Unknown is a state, not an error.** A timeout means "we don't know yet", never "failed": a payment the customer could have paid stays as it is and is resolved by asking the provider (status query), never by trying again with a new transaction. The one exception is safe by construction: if creating the payment page fails, the customer never saw a page, so nobody can pay that attempt; it's closed at once and a retry starts a new one.
 5. **Money is integers.** Minor units (paisa) in `Money`; the provider's `decimal(10,2)` is converted at the adapter, never inside the domain.
 6. **One work order, one captured payment.** A new attempt is allowed only when the previous one is final and not captured (`FAILED`, `EXPIRED`). A partial unique index enforces it.
 
@@ -71,8 +71,9 @@ sequenceDiagram
   Note over API,S: A. Creating the session times out
   API->>DB: payment INITIATED (tran_id t1)
   API-xS: POST gwprocess/v4/api.php: no answer in 10 s
-  API-->>API: 503 "Payment page not ready, try again" (t1 stays INITIATED)
-  Note over API: The client's retry sends the same Idempotency-Key:<br/>the same payment t1 is resumed, not a new one (step 4.2)
+  API->>DB: t1 FAILED: the customer never got its page, so nobody can pay it
+  API-->>API: 503 "Payment page not ready, try again" (Retry-After)
+  Note over API: The client retries with the same Idempotency-Key<br/>(the key was given back): a new attempt t2 gets a page
   end
 
   rect rgb(219, 234, 254)
@@ -204,6 +205,14 @@ Refunds are their own records (`REQUESTED -> PROCESSING -> REFUNDED / FAILED`), 
 | Refund (cancelled before start) | `client_escrow` | `gateway_clearing` | 5,000 |
 
 Every entry's debits equal its credits; corrections are reversing entries, never updates.
+
+## Built in step 4.2
+
+- `payment` module: `PaymentService` (start, one `confirm()`), `SslCommerz` (the provider adapter), `PaymentReconciler` (every minute: open payments older than 15 minutes; every night at 03:00 Dhaka: the last day against the provider into `payment_mismatch`), `IdempotencyKeys` ([ADR 0016](../adr/0016-idempotency-keys-for-payment-apis.md)).
+- API: `POST /api/work-orders/{id}/payments` (requires `Idempotency-Key`), `GET /api/work-orders/{id}/payment`; public: `POST /api/payments/sslcommerz/ipn` and `/return`.
+- `FakeSslCommerz`: a stand-in at `/fake-sslcommerz` with the same endpoints and fields, for local runs and demos without a sandbox store. Its page has Pay, "Pay but lose the notification", Card declined and Cancel.
+- The work order page has a Payment panel; `scripts/demo.sh` pays before Rahim starts.
+- Refunds on cancel and the payout on approval come with the ledger (step 4.3): their postings are the point.
 
 ## Not in this design
 

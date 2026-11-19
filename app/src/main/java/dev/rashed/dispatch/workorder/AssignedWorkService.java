@@ -6,6 +6,7 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Consumer;
 import org.jspecify.annotations.Nullable;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -23,16 +24,21 @@ public class AssignedWorkService {
     private final WorkOrderAccess access;
     private final WorkOrderRepository workOrders;
     private final TransactionTemplate transaction;
+    private final boolean fundingRequired;
 
     AssignedWorkService(
-            WorkOrderAccess access, WorkOrderRepository workOrders, PlatformTransactionManager transactionManager) {
+            WorkOrderAccess access,
+            WorkOrderRepository workOrders,
+            PlatformTransactionManager transactionManager,
+            @Value("${dispatch.payments.required}") boolean fundingRequired) {
         this.access = access;
         this.workOrders = workOrders;
         this.transaction = new TransactionTemplate(transactionManager);
+        this.fundingRequired = fundingRequired;
     }
 
     public WorkOrderView start(UUID workOrderId) {
-        return change(workOrderId, WorkOrder::start);
+        return change(workOrderId, workOrder -> workOrder.start(fundingRequired));
     }
 
     public WorkOrderView submit(UUID workOrderId, @Nullable String notes) {

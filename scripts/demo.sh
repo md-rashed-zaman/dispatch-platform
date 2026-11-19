@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # The Dispatch story in one run, against the local stack with real Keycloak logins:
 # a bank publishes a job, nearby technicians get offers, two accept at the same moment and exactly one wins,
-# the winner works the job and uploads a photo straight to storage, the bank approves (Phase 1). Meanwhile the
-# bank's live dashboard follows every change, emails go out, and one trace follows the publish through the
-# outbox and Kafka (Phase 2).
+# the bank pays for the job (held until approval), the winner works it and uploads a photo straight to
+# storage, the bank approves. Meanwhile the bank's live dashboard follows every change, emails go out, and one
+# trace follows the publish through the outbox and Kafka.
 #
 # Needs: the stack and app running (README "Getting started"), the seed loaded, curl, jq, and ImageMagick
 # (`magick`) for the sample photo. Grafana (lgtm) for the last step; it's skipped without it. Press Enter
@@ -72,6 +72,24 @@ jq -c '{status}' "$WORK_DIR/a.json" "$WORK_DIR/b.json"
 say "Both answers say ACCEPTED: accepting again an offer you already won is safe."
 api GET "/api/work-orders/$WORK_ORDER" "$DISPATCHER" | jq '{status, technicianId}'
 say "The 9 other technicians' offers closed in the same transaction. If any of them accepts now: 409 already-taken."
+
+step "The bank pays for the job; the money is held until the work is approved"
+KEY=$(uuidgen 2>/dev/null || cat /proc/sys/kernel/random/uuid)
+PAY_URL=$(curl -s -X POST "$API/api/work-orders/$WORK_ORDER/payments" -H "Authorization: Bearer $DISPATCHER" \
+  -H "Idempotency-Key: $KEY" | jq -r .redirectUrl)
+if [[ $PAY_URL == */fake-sslcommerz/* ]]; then
+  curl -s -o /dev/null -X POST "$PAY_URL/pay" # the stand-in's Pay button: no money moves
+  say "Paid on the payment page (the local stand-in for SSLCommerz)."
+else
+  say "Open $PAY_URL and pay with an SSLCommerz sandbox card, then press Enter."
+  read -r _
+fi
+for _ in $(seq 50); do # captured once Dispatch has asked the provider itself
+  [[ $(api GET "/api/work-orders/$WORK_ORDER/payment" "$DISPATCHER" | jq -r .status) == CAPTURED ]] && break
+  sleep 0.2
+done
+api GET "/api/work-orders/$WORK_ORDER/payment" "$DISPATCHER" | jq '{status, amount}'
+say "Captured only after Dispatch asked the provider: the payment page's notice and the browser's return just say which payment to check."
 
 step "Rahim starts the job and uploads a photo straight to object storage"
 api POST "/api/work-orders/$WORK_ORDER/start" "$RAHIM" | jq '{status}'

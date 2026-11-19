@@ -49,4 +49,27 @@ class WorkOrderTest {
         }
         assertThatThrownBy(() -> workOrder.addChecklistItem("One too many")).isInstanceOf(IllegalStateException.class);
     }
+
+    @Test
+    void aTechnicianCantStartAnUnfundedJobWhenPaymentsAreRequired() {
+        var workOrder = WorkOrders.inStatus(tenantId, UUID.randomUUID(), WorkOrderStatus.ASSIGNED);
+
+        assertThatThrownBy(() -> workOrder.start(true))
+                .isInstanceOf(dev.rashed.dispatch.shared.BusinessRuleException.class)
+                .hasMessageContaining("hasn't funded");
+        assertThat(workOrder.status()).isEqualTo(WorkOrderStatus.ASSIGNED);
+
+        workOrder.markFunded(java.time.Instant.parse("2026-11-19T10:00:00Z"));
+        workOrder.markFunded(java.time.Instant.parse("2026-11-19T11:00:00Z")); // a repeat keeps the first time
+        workOrder.start(true);
+        assertThat(workOrder.status()).isEqualTo(WorkOrderStatus.IN_PROGRESS);
+        assertThat(workOrder.fundedAt()).isEqualTo(java.time.Instant.parse("2026-11-19T10:00:00Z"));
+    }
+
+    @Test
+    void onlyAnAssignedJobCanBeFunded() {
+        var draft = WorkOrders.draft(tenantId, "Fix POS terminal");
+        assertThatThrownBy(() -> draft.markFunded(java.time.Instant.now()))
+                .isInstanceOf(dev.rashed.dispatch.shared.BusinessRuleException.class);
+    }
 }

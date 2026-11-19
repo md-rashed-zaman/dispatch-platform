@@ -70,6 +70,21 @@ export type WorkOrder = WorkOrderSummary & {
   rejectionReason: string | null;
   completionNotes: string | null;
   checklist: { position: number; description: string }[];
+  /** When the client's payment was captured (step 4.2); null until then. */
+  fundedAt: string | null;
+};
+
+/** GET /api/work-orders/{id}/payment: the newest attempt to fund a work order (step 4.2). */
+export type Payment = {
+  id: string;
+  workOrderId: string;
+  status: "INITIATED" | "PENDING" | "CAPTURED" | "FAILED" | "EXPIRED";
+  amount: Money;
+  /** The provider's payment page, while the client can still pay on it. */
+  redirectUrl: string | null;
+  reason: string | null;
+  createdAt: string;
+  settledAt: string | null;
 };
 
 export type Page<T> = { items: T[]; next: string | null };

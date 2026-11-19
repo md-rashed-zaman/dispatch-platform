@@ -1,8 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Check, CircleHelp, Copy, ImageIcon, LoaderCircle, MapPin, Star, X } from "lucide-react";
-import { useRef, useState } from "react";
-import { Link, useParams } from "react-router";
-import { api, ApiError, post, type Attachment, type Audit, type Status, type TechnicianProfile, type WorkOrder } from "../api";
+import { ArrowLeft, Check, CircleCheck, CircleHelp, Copy, CreditCard, ImageIcon, LoaderCircle, MapPin, Star, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Link, useParams, useSearchParams } from "react-router";
+import { api, ApiError, post, type Attachment, type Audit, type Payment, type Status, type TechnicianProfile, type WorkOrder } from "../api";
 import { Button, ConfirmDialog, ErrorNote, Panel, Skeleton, StatusPill } from "../components/ui";
 import { money, shortId, STATUS, timeWindow } from "../format";
 import { useRecentChanges } from "../recent";
@@ -152,6 +152,8 @@ export function WorkOrderPage() {
           )}
         </Panel>
 
+        <Funding workOrder={w} />
+
         {(audit.data || (w.status === "SUBMITTED" && audit.isSuccess)) && (
           <div className="lg:col-span-2">
             <AiCheck audit={audit.data ?? null} checklist={w.checklist} notes={w.completionNotes} />
@@ -277,6 +279,144 @@ function ProgressSteps({ current }: { current: number }) {
       })}
     </ol>
   );
+}
+
+const FUNDABLE: Status[] = ["ASSIGNED", "IN_PROGRESS"];
+
+/**
+ * Paying for the job (step 4.2, payment-flow.md). The client pays on the provider's page; coming back, the page
+ * checks with Dispatch (which asks the provider) until the payment is settled. The browser never decides.
+ */
+function Funding({ workOrder }: { workOrder: WorkOrder }) {
+  const queryClient = useQueryClient();
+  const [params, setParams] = useSearchParams();
+  // Where the provider sent the client back: "returned" means check; "declined" or "cancelled" is only what the
+  // browser was told, used for wording, never for the payment's state.
+  const said = params.get("payment");
+  const returned = said === "returned";
+  const pollingSince = useRef(Date.now());
+  const payment = useQuery({
+    queryKey: ["work-orders", "payment", workOrder.id],
+    queryFn: () =>
+      api<Payment>(`/api/work-orders/${workOrder.id}/payment`).catch((e) => {
+        if (e instanceof ApiError && e.problem.status === 404) return null; // never paid
+        throw e;
+      }),
+    refetchInterval: (q) => {
+      const open = q.state.data?.status === "PENDING" || q.state.data?.status === "INITIATED";
+      return returned && open && Date.now() - pollingSince.current < 60_000 ? 2000 : false;
+    },
+  });
+  const p = payment.data ?? null;
+  const funded = workOrder.fundedAt !== null || p?.status === "CAPTURED";
+
+  useEffect(() => {
+    if (p && p.status !== "PENDING" && p.status !== "INITIATED") {
+      if (said) setParams({}, { replace: true }); // settled: a reload shouldn't look like a fresh return
+      if (p.status === "CAPTURED" && !workOrder.fundedAt) void queryClient.invalidateQueries({ queryKey: ["work-orders"] });
+    }
+  }, [p, said, setParams, workOrder.fundedAt, queryClient]);
+
+  // One key per attempt, kept if the request may have reached the server (network error), so a retry can't pay twice.
+  const key = useRef<string | null>(null);
+  const fund = useMutation({
+    mutationFn: () => {
+      key.current ??= crypto.randomUUID();
+      return api<Payment>(`/api/work-orders/${workOrder.id}/payments`, {
+        method: "POST",
+        headers: { "Idempotency-Key": key.current },
+      });
+    },
+    onSuccess: (started) => {
+      key.current = null;
+      if (started.redirectUrl) window.location.assign(started.redirectUrl);
+    },
+    onError: (e) => {
+      if (e instanceof ApiError) key.current = null;
+    },
+  });
+
+  if (!funded && !p && !FUNDABLE.includes(workOrder.status)) return null;
+  if (payment.isPending) {
+    return (
+      <Panel title="Payment">
+        <Skeleton className="h-12" />
+      </Panel>
+    );
+  }
+
+  const amount = money(workOrder.budget);
+  const fundError = fund.error instanceof ApiError ? fund.error.message : fund.error ? "Couldn't reach Dispatch. Try again." : null;
+  const checking = returned && (p?.status === "PENDING" || p?.status === "INITIATED") && Date.now() - pollingSince.current < 60_000;
+  const payButton = (label: string) => (
+    <Button className="mt-3" loading={fund.isPending} onClick={() => fund.mutate()}>
+      <CreditCard aria-hidden className="size-4" /> {label}
+    </Button>
+  );
+
+  return (
+    <Panel title="Payment">
+      <div aria-live="polite">
+        {funded ? (
+          <p className="flex items-center gap-2 text-sm">
+            <CircleCheck aria-hidden className="size-4 text-ok" />
+            <span className="font-medium">Funded</span>
+            <span className="data text-[13px]">{amount}</span>
+            {(workOrder.fundedAt ?? p?.settledAt) && (
+              <span className="text-muted-foreground">· {when(workOrder.fundedAt ?? p!.settledAt!)}</span>
+            )}
+          </p>
+        ) : checking ? (
+          <p className="flex items-center gap-2 text-sm">
+            <LoaderCircle aria-hidden className="size-4 animate-spin text-muted-foreground motion-reduce:animate-none" />
+            Checking your payment with the provider…
+          </p>
+        ) : p?.status === "PENDING" && p.reason === "Risk review" ? (
+          <p className="text-sm">
+            <span className="font-medium">Held for review.</span>{" "}
+            <span className="text-muted-foreground">
+              The payment provider flagged this payment for a check. The job is funded once it's cleared.
+            </span>
+          </p>
+        ) : p?.status === "PENDING" && (said === "declined" || said === "cancelled") ? (
+          <>
+            <p className="text-sm">
+              <span className="font-medium">{said === "declined" ? "The payment was declined." : "You cancelled the payment."}</span>{" "}
+              <span className="text-muted-foreground">You can try again with another card or method.</span>
+            </p>
+            {payButton("Try again")}
+          </>
+        ) : p?.status === "PENDING" ? (
+          <>
+            <p className="text-sm">
+              <span className="font-medium">Payment started, not confirmed yet.</span>{" "}
+              <span className="text-muted-foreground">If you've paid, it's confirmed within 15 minutes. Otherwise continue where you left off.</span>
+            </p>
+            {payButton("Continue to payment")}
+          </>
+        ) : (
+          <>
+            {p && (p.status === "FAILED" || p.status === "EXPIRED") && (
+              <p className="mb-1 text-sm">
+                <span className="font-medium">{p.status === "EXPIRED" ? "The payment page expired." : "The payment didn't go through."}</span>{" "}
+                <span className="text-muted-foreground">{p.reason}</span>
+              </p>
+            )}
+            <p className="text-sm text-muted-foreground">
+              The technician starts once you've paid <span className="data text-[13px] text-foreground">{amount}</span>, on the
+              provider's page: card, bKash, Nagad or bank. The money is held until you approve the work.
+            </p>
+            {payButton(p ? "Try again" : "Fund this job")}
+          </>
+        )}
+      </div>
+      {fundError && <div className="mt-3"><ErrorNote>{fundError}</ErrorNote></div>}
+    </Panel>
+  );
+}
+
+function when(iso: string) {
+  return new Date(iso).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
 }
 
 function waitingText(status: Status) {

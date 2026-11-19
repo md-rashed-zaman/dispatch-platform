@@ -14,7 +14,8 @@ import org.springframework.security.oauth2.jwt.JwtIssuerValidator;
 import org.springframework.security.web.SecurityFilterChain;
 
 /**
- * Every request must carry a valid Keycloak access token, except health checks and API docs. Token
+ * Every request must carry a valid Keycloak access token, except health checks, API docs and the payment
+ * provider's callbacks. Token
  * checks (signature via Keycloak's public keys, issuer, audience, expiry) and the role mapping are
  * configured in application.yml.
  */
@@ -25,7 +26,15 @@ class SecurityConfig {
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http.authorizeHttpRequests(auth -> auth.requestMatchers(
-                                "/actuator/health/**", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html")
+                                "/actuator/health/**",
+                                "/v3/api-docs/**",
+                                "/swagger-ui/**",
+                                "/swagger-ui.html",
+                                // The payment provider and the customer's browser after paying can't sign in;
+                                // these only name a payment to check, never prove one (ADR 0015).
+                                "/api/payments/sslcommerz/**",
+                                // Local stand-in for the provider; only exists when dispatch.payments.sslcommerz.fake
+                                "/fake-sslcommerz/**")
                         .permitAll()
                         .anyRequest()
                         .authenticated())
