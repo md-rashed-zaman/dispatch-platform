@@ -282,6 +282,24 @@ public class WorkOrder {
     }
 
     /**
+     * Gives an assigned job that hasn't started to another technician (a dispatcher's decision, step 4.5). The
+     * new technician is told like any assignment; the money, if paid, stays with the job.
+     */
+    public void reassign(UUID newTechnician) {
+        Objects.requireNonNull(newTechnician, "technician");
+        if (status != WorkOrderStatus.ASSIGNED) {
+            throw new BusinessRuleException(
+                    "not-reassignable",
+                    "Only an assigned job that hasn't started can be reassigned, not one that is " + status + ".");
+        }
+        if (newTechnician.equals(technicianId)) {
+            throw new BusinessRuleException("same-technician", "This technician already has the job.");
+        }
+        this.technicianId = newTechnician;
+        events.add(new WorkOrderAssigned(id, tenantId, newTechnician, title, Timestamps.now()));
+    }
+
+    /**
      * @param fundingRequired whether the client must have paid first (dispatch.payments.required): the technician
      *     knows the money exists before driving out (ADR 0015)
      */

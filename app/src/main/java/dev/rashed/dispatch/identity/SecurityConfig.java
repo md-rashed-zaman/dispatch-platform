@@ -24,7 +24,8 @@ import org.springframework.security.web.SecurityFilterChain;
 class SecurityConfig {
 
     @Bean
-    SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    SecurityFilterChain securityFilterChain(HttpSecurity http, @Value("${dispatch.oauth.issuer-uri}") String issuerUri)
+            throws Exception {
         return http.authorizeHttpRequests(auth -> auth.requestMatchers(
                                 "/actuator/health/**",
                                 "/v3/api-docs/**",
@@ -38,7 +39,11 @@ class SecurityConfig {
                         .permitAll()
                         .anyRequest()
                         .authenticated())
-                .oauth2ResourceServer(oauth2 -> oauth2.jwt(Customizer.withDefaults()))
+                .oauth2ResourceServer(oauth2 -> oauth2.jwt(Customizer.withDefaults())
+                        // OAuth 2.0 Protected Resource Metadata (RFC 9728) at /.well-known/oauth-protected-resource,
+                        // linked from every 401: how an MCP client (step 4.5) finds where to sign in.
+                        .protectedResourceMetadata(metadata -> metadata.protectedResourceMetadataCustomizer(
+                                resource -> resource.authorizationServer(issuerUri))))
                 // No server session: each request proves itself with its token.
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 // CSRF attacks ride on cookies the browser sends automatically. Bearer tokens aren't sent

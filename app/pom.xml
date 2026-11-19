@@ -39,6 +39,11 @@
             <artifactId>spring-ai-starter-model-google-genai</artifactId>
         </dependency>
         <dependency>
+            <!-- MCP server (step 4.5): dispatchers' AI clients call Dispatch's tools with their own token -->
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-starter-mcp-server-webmvc</artifactId>
+        </dependency>
+        <dependency>
             <!-- Text embeddings for semantic matching (step 3.4) -->
             <groupId>org.springframework.ai</groupId>
             <artifactId>spring-ai-starter-model-google-genai-embedding</artifactId>
