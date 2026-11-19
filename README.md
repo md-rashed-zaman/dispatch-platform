@@ -223,6 +223,7 @@ docker compose -f infra/compose/docker-compose.yml exec -T postgres psql -U disp
 - Object storage (S3 API): http://localhost:8333, bucket `dispatch-media` (created by the app on startup); keys in `infra/compose/seaweedfs/s3.json`
 - Two instances behind a load balancer: `cd app && ./mvnw package -DskipTests`, stop the app on 8080, then `docker compose -f infra/compose/docker-compose.yml --profile cluster up -d --build` (http://localhost:8088; Linux host networking)
 - The image alone: `cd app && ./mvnw package -DskipTests && docker build -t dispatch-app:local .` (238 MB on disk, 187 MB to download, half the old image: a jlink'ed Java 21 runtime on distroless, non-root, no shell; [ADR 0020](docs/adr/0020-image-with-a-jlinked-runtime-on-distroless.md)). Probes: `/livez`, `/readyz`. CI builds it for amd64 and arm64.
+- Kubernetes (local, kind): `scripts/k8s-up.sh` builds a one-node cluster with the infrastructure (`infra/k8s`) and the app from its Helm chart (`infra/helm/dispatch`), seeds it, and serves on the same ports as compose, so the demo scripts work unchanged. Needs kind, kubectl and helm; stops the compose stack. Remove it with `kind delete cluster --name dispatch`. Why it's built this way: [ADR 0021](docs/adr/0021-helm-chart-for-the-app-plain-manifests-for-local-infrastructure.md).
 - Grafana (metrics, traces, dashboards, alerts): http://localhost:3000, folder *Dispatch*
 - Mailpit (every email the app sends, nothing leaves the machine): http://localhost:8025
 - Live updates: `curl -N -H "Authorization: Bearer $TOKEN" http://localhost:8080/api/live/work-orders`
@@ -270,13 +271,15 @@ Press Enter between steps, or run it straight through with `DEMO_FAST=1`. A 3-mi
 ```
 app/              Spring Boot modular monolith
 infra/compose/    Local Docker Compose stack
-infra/helm/       Kubernetes Helm chart (later)
+infra/helm/       Helm chart for the app
+infra/k8s/        Kubernetes manifests for the local infrastructure
+infra/kind/       Local cluster definition
 load-tests/       k6 scripts
 evals/            AI evals: cases, recorded answers, results
 docs/adr/         Architecture decision records
 docs/diagrams/    Context map, ERD, sequence diagrams
 docs/learning/    Learning journal and open questions
 docs/runbooks/    Operational runbooks and postmortems
-scripts/          Demo script
+scripts/          Demo scripts, local Kubernetes setup
 docs/perf/        Performance measurements
 ```

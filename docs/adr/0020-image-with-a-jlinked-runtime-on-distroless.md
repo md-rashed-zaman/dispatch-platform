@@ -16,7 +16,7 @@ What matters, in order: current Java security patches, a small attack surface, a
 3. **On `gcr.io/distroless/cc-debian12:nonroot`**: glibc, CA certificates and tzdata; no shell, no package manager; user 65532.
 4. **Layered jar**: dependencies, loader, snapshot dependencies, then the application, so a code change replaces a 2 MB layer.
 5. **Bases pinned by digest**, so a rebuild gets the same bases until someone updates them on purpose.
-6. **JVM flags in the image:** heap at 70% of the container's memory limit, exit on out-of-memory; `JAVA_TOOL_OPTIONS` adds more per environment.
+6. **JVM flags in the image:** heap at 70% of the container's memory limit (50% since step 5.2), exit on out-of-memory; `JAVA_TOOL_OPTIONS` adds more per environment.
 
 ## Alternatives considered
 
@@ -31,6 +31,6 @@ What matters, in order: current Java security patches, a small attack surface, a
 ## Consequences
 
 - Measured the same way for all three (same app layers; `docker save`): Temurin JRE 481 MB on disk / 251 MB to download, distroless Java 341 / 199, this image **238 / 187**. Half the old size on disk, on the current Java patch release, with no shell. The runtime itself is 66 MB. (`docker image ls` shows larger numbers on Docker's containerd image store, which counts compressed and unpacked copies.)
-- Proven against the real stack: both demo scripts pass on the image (payments, ledger, refunds, flags, MCP, uploads, Kafka, email), outbound TLS works (Gemini answered), the heap is 448 MB under a 640 MB limit, `docker stop` shuts down gracefully in milliseconds (exit 143).
+- Proven against the real stack: both demo scripts pass on the image (payments, ledger, refunds, flags, MCP, uploads, Kafka, email), outbound TLS works (Gemini answered), the heap is 448 MB under a 640 MB limit (corrected in step 5.2: that only worked because Docker let the container swap; on Kubernetes it was OOMKilled, so the image now takes 50% and runs with a 1 GiB limit, [ADR 0021](0021-helm-chart-for-the-app-plain-manifests-for-local-infrastructure.md)), `docker stop` shuts down gracefully in milliseconds (exit 143).
 - No shell to debug with: use `kubectl debug` with an ephemeral container, or run the `JDK` stage locally.
 - A new library that loads a module by name needs that module added to the `jlink` list; the symptom would be a `ClassNotFoundException` for a `java.*`/`jdk.*` class at runtime, and the demos would catch the common paths.

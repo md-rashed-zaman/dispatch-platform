@@ -1,0 +1,6 @@
+apiVersion: v2
+name: dispatch
+description: The Dispatch API (one Spring Boot app). Infrastructure is separate (infra/k8s, or managed services).
+type: application
+version: 0.1.0
+appVersion: "0.0.1-SNAPSHOT"

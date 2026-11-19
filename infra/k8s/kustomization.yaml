@@ -1,0 +1,8 @@
+# kubectl apply -k infra/k8s. The secrets and the realm ConfigMap come from scripts/k8s-up.sh.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - postgres.yaml
+  - kafka.yaml
+  - keycloak.yaml
+  - small-services.yaml

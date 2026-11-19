@@ -7,7 +7,8 @@ x-app: &app
   profiles: [cluster]
   image: dispatch-app:local
   network_mode: host
-  mem_limit: 640m
+  mem_limit: 1g
+  memswap_limit: 1g   # no swap, as on Kubernetes: otherwise a JVM too big for its limit only gets slow (step 5.2)
   depends_on:
     postgres: { condition: service_healthy }
     kafka: { condition: service_healthy }

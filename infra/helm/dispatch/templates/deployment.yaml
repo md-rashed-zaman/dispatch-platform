@@ -1,0 +1,75 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}
+  labels: {{- include "dispatch.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: {{ .Values.rollingUpdate.maxSurge }}
+      maxUnavailable: {{ .Values.rollingUpdate.maxUnavailable }}
+  selector:
+    matchLabels: {{- include "dispatch.selector" . | nindent 6 }}
+  template:
+    metadata:
+      labels: {{- include "dispatch.selector" . | nindent 8 }}
+      annotations:
+        # A changed setting changes the pod template, so `helm upgrade` rolls the pods (env is read at start).
+        checksum/env: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+    spec:
+      # Off: Kubernetes would add REDIS_PORT=tcp://10.96.x.x:6379 and the like for every Service, and Spring would
+      # read REDIS_PORT as the Redis port.
+      enableServiceLinks: false
+      automountServiceAccountToken: false # the app never calls the Kubernetes API
+      terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        seccompProfile: { type: RuntimeDefault }
+      containers:
+        - name: app
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          envFrom:
+            - configMapRef: { name: {{ .Release.Name }}-env }
+            - secretRef: { name: {{ .Values.existingSecret }} }
+          ports:
+            - { name: http, containerPort: 8080 }
+          # Startup: Spring Boot takes 20 to 60 s; liveness and readiness wait until this passes (up to 3 min).
+          startupProbe:
+            httpGet: { path: /livez, port: http }
+            periodSeconds: 5
+            failureThreshold: 36
+          # Liveness: the process only. A database outage must not restart every pod (T37). Lenient (a minute of
+          # failures): on a starved node a strict one restarted healthy pods and made the outage (step 5.2).
+          livenessProbe:
+            httpGet: { path: /livez, port: http }
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+          # Readiness: the app and its database. Failing takes the pod out of the Service, without a restart.
+          readinessProbe:
+            httpGet: { path: /readyz, port: http }
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 2
+          {{- if .Values.preStopSleepSeconds }}
+          lifecycle:
+            preStop:
+              sleep: { seconds: {{ .Values.preStopSleepSeconds }} } # no shell in the image, so no `sh -c sleep`
+          {{- end }}
+          resources: {{- toYaml .Values.resources | nindent 12 }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: [ALL] }
+          volumeMounts:
+            - { name: tmp, mountPath: /tmp } # Tomcat's work files; the rest of the filesystem is read-only
+      volumes:
+        - name: tmp
+          emptyDir: { sizeLimit: 64Mi }

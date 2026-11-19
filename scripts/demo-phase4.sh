@@ -130,7 +130,7 @@ api GET /api/flags/ai.auto-approve/changes "$ADMIN" | jq -c '.[0:2][] | {reason,
 api GET /api/experiments/auto-approve "$ADMIN" | jq -c '.arms[] | {variant, decided, approved, minutesToApprovalP50, aiApprovableRejectedByPerson}'
 say "Every change keeps who, why, before and after. The Grafana 'Experiment' row compares the arms (http://localhost:3000)."
 ETAG=$(curl -s -D - -o /dev/null "$API/api/flags/ai.auto-approve" -H "Authorization: Bearer $ADMIN" | grep -i '^etag' | tr -d '\r' | cut -d' ' -f2)
-curl -s -o /dev/null -X PUT "$API/api/flags/ai.auto-approve" -H "Authorization: Bearer $ADMIN" -H "If-Match: $ETAG" \
+curl -sf -o /dev/null -X PUT "$API/api/flags/ai.auto-approve" -H "Authorization: Bearer $ADMIN" -H "If-Match: $ETAG" \
   -H 'Content-Type: application/json' -d "$(jq -c '{enabled, rolloutPercent, allowTenants, denyTenants, reason: "Demo over: back to what it was"}' <<< "$BEFORE")"
 
 step "The MCP tools an AI assistant gets: the dispatcher's own, nothing more"
