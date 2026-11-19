@@ -106,7 +106,7 @@ Stack: Spring Boot 4.1, Spring Modulith 2.1, Hibernate 7, Flyway, PostgreSQL 17 
 ## Documentation
 
 - Decisions: [docs/adr](docs/adr) (one per significant choice, with the alternatives)
-- Diagrams: [context map](docs/diagrams/context-map.md), [ERD](docs/diagrams/erd.md), [lifecycle](docs/diagrams/work-order-lifecycle.md), [upload flow](docs/diagrams/attachment-upload.md)
+- Diagrams: [context map](docs/diagrams/context-map.md), [ERD](docs/diagrams/erd.md), [lifecycle](docs/diagrams/work-order-lifecycle.md), [upload flow](docs/diagrams/attachment-upload.md), [payment flow](docs/diagrams/payment-flow.md)
 - Measurements: [docs/perf](docs/perf), [AI limits and model behaviour](docs/ai-limits.md)
 - Operations: [docs/failure-modes.md](docs/failure-modes.md)
 - Domain: [event storming](docs/domain/event-storming.md), [glossary](docs/glossary.md)

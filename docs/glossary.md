@@ -27,6 +27,11 @@ These words mean exactly this, in conversations, docs and code. If a word change
 | **Reject** | Send the work back to the technician with a reason. | `WorkRejected` |
 | **Payout** | Releasing escrow to the technician, minus the platform fee. | `PayoutReleased` |
 | **Platform fee** | Dispatch's share of each paid work order. | ledger account `platform_revenue` |
+| **Funding** | The client paying a work order's budget into escrow, after assignment and before work starts. | `payment`, `EscrowFunded` |
+| **Hosted checkout** | The provider's payment page the client is sent to; card and wallet details never reach Dispatch. | SSLCommerz `GatewayPageURL` |
+| **IPN** | Instant Payment Notification: the provider's server-to-server POST after a payment. A hint about which payment to check, never proof. | `POST /api/payments/sslcommerz/ipn` |
+| **Capture** | A payment confirmed by Dispatch's own call to the provider (validation or status query): the money is in escrow. | payment status `CAPTURED` |
+| **Reconciliation** | Comparing our payment states with the provider's, to settle unknown outcomes and find mismatches. | `PaymentReconciler` |
 | **SLA** | Time limits for a work order (e.g. assigned within 2 hours of publishing). | SLA policy job |
 
 ## Words we avoid
