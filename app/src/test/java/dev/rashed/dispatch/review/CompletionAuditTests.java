@@ -79,12 +79,13 @@ class CompletionAuditTests {
     String dispatcher;
 
     @BeforeEach
-    void setUp() {
+    void setUp() throws Exception {
         jdbc.update("insert into company (id, name, slug) values (?, 'Company', ?)", tenant, "company-" + tenant);
         dispatcher =
                 TestTokens.token(c -> c.claim("roles", List.of("DISPATCHER")).claim("tenant_id", tenant.toString()));
         technician = TestTechnicians.verified(jdbc, 23.79, 90.41, "cctv");
         workOrder = inProgressWorkOrder();
+        rollout(0, tenant); // this company gets auto-approval; any other only if a test says so
         var container = listeners.getListenerContainer(CompletionAuditor.CONSUMER);
         await().atMost(Duration.ofSeconds(30))
                 .until(() -> container.getAssignedPartitions() != null
@@ -110,6 +111,35 @@ class CompletionAuditTests {
                 .extracting(CompletionCheck.ChecklistItem::description)
                 .containsExactly("Photo of the camera mounted", "Photo of the live feed");
         assertThat(sent.getValue().photos()).hasSize(1);
+    }
+
+    @Test
+    void aCompanyOutsideTheRolloutGetsTheRecommendationAndAPersonDecides() throws Exception {
+        rollout(0); // the flag is on for nobody: this company is in the control arm
+        photo("camera.jpg");
+        given(check.check(any())).willReturn(assessment(0.97, Verdict.MET, Verdict.MET));
+
+        submit(null);
+
+        await().atMost(Duration.ofSeconds(30)).until(() -> audit() != null);
+        assertThat(workOrderStatus()).isEqualTo("SUBMITTED");
+        assertThat(audit())
+                .containsEntry("state", "NEEDS_REVIEW")
+                .containsEntry("auto_approve_variant", "off")
+                .containsEntry("ai_would_approve", true);
+        assertThat(audit().get("reason").toString()).contains("switched off for this company");
+
+        mvc.perform(post("/api/reviews/{id}/approve", audit().get("id").toString())
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + dispatcher))
+                .andExpect(status().isOk());
+        mvc.perform(get("/api/experiments/auto-approve")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + TestTokens.platformAdmin()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.arms[?(@.variant == 'off')].aiApprovableDecidedByPerson")
+                        .value(org.hamcrest.Matchers.hasItem(org.hamcrest.Matchers.greaterThanOrEqualTo(1))))
+                .andExpect(jsonPath("$.enoughData").value(false));
+        mvc.perform(get("/api/experiments/auto-approve").header(HttpHeaders.AUTHORIZATION, "Bearer " + dispatcher))
+                .andExpect(status().isForbidden());
     }
 
     @Test
@@ -236,6 +266,31 @@ class CompletionAuditTests {
             return null;
         });
         return id;
+    }
+
+    /**
+     * Sets the ai.auto-approve flag through the admin API (as a platform admin would), so the flag, its audit and
+     * the OpenFeature client are all real.
+     */
+    private void rollout(int percent, UUID... allowed) throws Exception {
+        var admin = TestTokens.platformAdmin();
+        var etag = mvc.perform(get("/api/flags/ai.auto-approve").header(HttpHeaders.AUTHORIZATION, "Bearer " + admin))
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getHeader(HttpHeaders.ETAG);
+        var allow = java.util.Arrays.stream(allowed)
+                .map(id -> "\"" + id + "\"")
+                .collect(java.util.stream.Collectors.joining(","));
+        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put(
+                                "/api/flags/ai.auto-approve")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + admin)
+                        .header(HttpHeaders.IF_MATCH, etag)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"enabled": true, "rolloutPercent": %d, "allowTenants": [%s], "denyTenants": [],
+                                 "reason": "test setup"}""".formatted(percent, allow)))
+                .andExpect(status().isOk());
     }
 
     /** A confirmed photo, as if uploaded through the API. */

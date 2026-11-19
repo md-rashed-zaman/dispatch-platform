@@ -48,10 +48,12 @@ class CompletionAudits {
 
     private final JdbcClient jdbc;
     private final JsonMapper json;
+    private final ReviewMetrics metrics;
 
-    CompletionAudits(JdbcClient jdbc, JsonMapper json) {
+    CompletionAudits(JdbcClient jdbc, JsonMapper json, ReviewMetrics metrics) {
         this.jdbc = jdbc;
         this.json = json;
+        this.metrics = metrics;
     }
 
     @Transactional(readOnly = true)
@@ -71,13 +73,15 @@ class CompletionAudits {
             UUID sourceEventId,
             Optional<CompletionCheck.Assessment> assessment,
             int photoCount,
-            AuditPolicy.Decision decision) {
+            AuditPolicy.Decision decision,
+            String variant,
+            boolean aiWouldApprove) {
         return jdbc.sql("""
                         INSERT INTO completion_audit (id, tenant_id, work_order_id, source_event_id, state, model,
                                                       prompt_version, items, confidence, photo_count, recommendation,
-                                                      reason)
+                                                      reason, auto_approve_variant, ai_would_approve)
                         VALUES (:id, :tenant, :workOrder, :event, 'NEEDS_REVIEW', :model, :version, CAST(:items AS jsonb),
-                                :confidence, :photos, :recommendation, :reason)
+                                :confidence, :photos, :recommendation, :reason, :variant, :wouldApprove)
                         ON CONFLICT (source_event_id) DO NOTHING
                         """)
                         .param("id", id)
@@ -103,6 +107,8 @@ class CompletionAudits {
                         .param("photos", photoCount)
                         .param("recommendation", decision.recommendation().name())
                         .param("reason", decision.reason())
+                        .param("variant", variant)
+                        .param("wouldApprove", aiWouldApprove)
                         .update()
                 > 0;
     }
@@ -110,17 +116,27 @@ class CompletionAudits {
     /** Records the decision on an open audit; false if it was decided already. */
     @Transactional
     boolean decide(UUID id, State state, String decidedBy, @Nullable String reason) {
-        return jdbc.sql("""
+        var decided = jdbc.sql("""
                         UPDATE completion_audit SET state = :state, decided_by = :by, decision_reason = :reason,
                                                     decided_at = now()
                         WHERE id = :id AND state = 'NEEDS_REVIEW'
+                        RETURNING created_at, auto_approve_variant, ai_would_approve
                         """)
-                        .param("id", id)
-                        .param("state", state.name())
-                        .param("by", decidedBy)
-                        .param("reason", reason)
-                        .update()
-                > 0;
+                .param("id", id)
+                .param("state", state.name())
+                .param("by", decidedBy)
+                .param("reason", reason)
+                .query((rs, row) -> {
+                    metrics.decided(
+                            rs.getString("auto_approve_variant"),
+                            ReviewMetrics.outcome(state.name()),
+                            "system".equals(decidedBy) ? "system" : "person",
+                            rs.getTimestamp("created_at").toInstant(),
+                            (Boolean) rs.getObject("ai_would_approve"));
+                    return true;
+                })
+                .list();
+        return !decided.isEmpty();
     }
 
     /** The work order was decided outside the review queue: close its open audit with what was decided. */
@@ -130,7 +146,20 @@ class CompletionAudits {
                         UPDATE completion_audit SET state = 'DECIDED_ELSEWHERE', decided_by = 'work order', decision_reason = :outcome,
                                                     decided_at = now()
                         WHERE work_order_id = :workOrder AND state = 'NEEDS_REVIEW'
-                        """).param("workOrder", workOrderId).param("outcome", outcome).update();
+                        RETURNING created_at, auto_approve_variant, ai_would_approve
+                        """)
+                .param("workOrder", workOrderId)
+                .param("outcome", outcome)
+                .query((rs, row) -> {
+                    metrics.decided(
+                            rs.getString("auto_approve_variant"),
+                            ReviewMetrics.outcome(outcome),
+                            "person",
+                            rs.getTimestamp("created_at").toInstant(),
+                            (Boolean) rs.getObject("ai_would_approve"));
+                    return true;
+                })
+                .list();
     }
 
     @Transactional(readOnly = true)

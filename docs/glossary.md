@@ -27,6 +27,8 @@ These words mean exactly this, in conversations, docs and code. If a word change
 | **Reject** | Send the work back to the technician with a reason. | `WorkRejected` |
 | **Payout** | Releasing escrow to the technician, minus the platform fee. | `PayoutReleased` |
 | **Platform fee** | Dispatch's share of each paid work order. | ledger account `platform_revenue` |
+| **Feature flag** | A switch that turns a feature on for some companies: on or off for everyone, an allow and a deny list, and a rollout percentage. | `flags` module, `feature_flag` table |
+| **Bucket** | A company's fixed number from 0 to 99 for a flag (a hash of the flag and the company): on when it's below the rollout percentage. | `Flag.bucket` |
 | **Funding** | The client paying a work order's budget into escrow, after assignment and before work starts. | `payment`, `EscrowFunded` |
 | **Hosted checkout** | The provider's payment page the client is sent to; card and wallet details never reach Dispatch. | SSLCommerz `GatewayPageURL` |
 | **IPN** | Instant Payment Notification: the provider's server-to-server POST after a payment. A hint about which payment to check, never proof. | `POST /api/payments/sslcommerz/ipn` |
