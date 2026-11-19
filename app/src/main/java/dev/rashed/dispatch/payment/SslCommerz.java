@@ -32,7 +32,10 @@ import tools.jackson.databind.json.JsonMapper;
  *   <li>validate a notice: {@code GET /validator/api/validationserverAPI.php?val_id=}, answer {@code VALID},
  *       {@code VALIDATED} or {@code INVALID_TRANSACTION};
  *   <li>query by our id: {@code GET /validator/api/merchantTransIDvalidationAPI.php?tran_id=}, answer
- *       {@code APIConnect=DONE} and an {@code element} list (VALID, VALIDATED, PENDING, FAILED).
+ *       {@code APIConnect=DONE} and an {@code element} list (VALID, VALIDATED, PENDING, FAILED);
+ *   <li>refund: the same path with {@code bank_tran_id}, {@code refund_trans_id}, {@code refund_amount} and
+ *       {@code refund_remarks}, answer {@code status} success, processing or failed and a {@code refund_ref_id};
+ *       its status: the same path with {@code refund_ref_id}, answer refunded, processing or cancelled.
  * </ul>
  */
 @Component
@@ -139,6 +142,51 @@ class SslCommerz implements PaymentProvider {
         return found;
     }
 
+    @Override
+    public RefundStarted refund(String bankTranId, String refundTransId, Money amount, String remarks) {
+        var answer = call(() -> http.get()
+                .uri(uri -> credentials(uri.path("/validator/api/merchantTransIDvalidationAPI.php"))
+                        .queryParam("bank_tran_id", bankTranId)
+                        .queryParam("refund_trans_id", refundTransId)
+                        .queryParam("refund_amount", decimal(amount))
+                        .queryParam("refund_remarks", remarks)
+                        .queryParam("v", "1")
+                        .build())
+                .retrieve()
+                .body(String.class));
+        var connect = text(answer, "APIConnect");
+        if (!"DONE".equals(connect)) {
+            throw new Refused("refund refused: APIConnect " + connect);
+        }
+        var status = text(answer, "status");
+        var ref = text(answer, "refund_ref_id");
+        // "processing": this refund was started before (our retry): it carries the same reference.
+        if (("success".equals(status) || "processing".equals(status)) && ref != null && !ref.isBlank()) {
+            return new RefundStarted(ref);
+        }
+        if ("failed".equals(status)) {
+            throw new Refused("refund refused: " + text(answer, "errorReason"));
+        }
+        throw new Unavailable("refund answer without a reference (status " + status + ")", null);
+    }
+
+    @Override
+    public RefundState refundStatus(String refundRefId) {
+        var answer = call(() -> http.get()
+                .uri(uri -> credentials(uri.path("/validator/api/merchantTransIDvalidationAPI.php"))
+                        .queryParam("refund_ref_id", refundRefId)
+                        .build())
+                .retrieve()
+                .body(String.class));
+        var status = text(answer, "status");
+        return switch (status == null ? "" : status) {
+            case "refunded" -> RefundState.REFUNDED;
+            case "processing" -> RefundState.PROCESSING;
+            case "cancelled" -> RefundState.FAILED;
+            default -> throw new Unavailable("unknown refund status " + status, null);
+        };
+    }
+
     private UriBuilder credentials(UriBuilder uri) {
         return uri.queryParam("store_id", settings.storeId())
                 .queryParam("store_passwd", settings.storePassword())
@@ -186,11 +234,22 @@ class SslCommerz implements PaymentProvider {
             throw new Unavailable("unreadable amount " + amount + " " + currency, badAmount);
         }
         var risk = text(t, "risk_level");
+        // store_amount is in the settlement currency ("currency"): only comparable when that's what we charged.
+        var store = text(t, "store_amount");
+        Money storeAmount = null;
+        if (store != null && !store.isBlank() && currency.equals(text(t, "currency"))) {
+            try {
+                storeAmount = new Money(new BigDecimal(store).movePointRight(2).longValueExact(), currency);
+            } catch (RuntimeException unreadable) {
+                storeAmount = null; // a missing charge only costs a fee posting, never the capture
+            }
+        }
         return new Transaction(
                 tranId,
                 text(t, "val_id"),
                 status(providerStatus),
                 money,
+                storeAmount,
                 text(t, "bank_tran_id"),
                 risk == null || risk.isBlank() ? 0 : Integer.parseInt(risk.trim()),
                 providerStatus);

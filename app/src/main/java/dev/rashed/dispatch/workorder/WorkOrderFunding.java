@@ -48,4 +48,16 @@ public class WorkOrderFunding {
         workOrders.saveAndFlush(workOrder);
         return true;
     }
+
+    /** The technician was paid: APPROVED to PAID, in the caller's transaction. False if it isn't APPROVED. */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public boolean markPaid(UUID workOrderId) {
+        var workOrder = workOrders.findById(workOrderId).orElseThrow();
+        if (workOrder.status() != WorkOrderStatus.APPROVED) {
+            return false;
+        }
+        workOrder.markPaid();
+        workOrders.saveAndFlush(workOrder); // publishes the status change, like every transition
+        return true;
+    }
 }

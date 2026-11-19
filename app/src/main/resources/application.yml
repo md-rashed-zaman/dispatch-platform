@@ -205,6 +205,7 @@ dispatch:
     stale-after: PT1M                 # an INITIATED payment this old never got a payment page
     reconcile-after: PT15M            # open this long: ask the provider (the notice may be lost)
     session-lifetime: PT2H            # nothing paid by then: EXPIRED (a new attempt may start)
+    platform-fee-basis-points: 1000   # 10% of each approved job; the rest is the technician's (step 4.3)
     sslcommerz:
       # Without a sandbox store, a stand-in at /fake-sslcommerz plays SSLCommerz. With one: SSLCOMMERZ_FAKE=false,
       # SSLCOMMERZ_BASE_URL=https://sandbox.sslcommerz.com and the store's id and password.

@@ -46,7 +46,12 @@ class Payments {
             @Nullable Instant settledAt) {}
 
     /** What the provider said when the payment settled. */
-    record Settlement(@Nullable String valId, @Nullable String bankTranId, String providerStatus, int riskLevel) {}
+    record Settlement(
+            @Nullable String valId,
+            @Nullable String bankTranId,
+            String providerStatus,
+            int riskLevel,
+            @Nullable Money storeAmount) {}
 
     private final JdbcClient jdbc;
 
@@ -99,6 +104,22 @@ class Payments {
                 .optional();
     }
 
+    /** The work order's captured payment, if any (at most one: the partial unique index). */
+    Optional<Payment> captured(UUID workOrderId) {
+        return select("WHERE work_order_id = :workOrder AND status = 'CAPTURED'")
+                .param("workOrder", workOrderId)
+                .query(Payments::payment)
+                .optional();
+    }
+
+    /** The bank's id for a captured payment: refunds name it. */
+    Optional<String> bankTranId(UUID paymentId) {
+        return jdbc.sql("SELECT bank_tran_id FROM payment WHERE id = :id")
+                .param("id", paymentId)
+                .query(String.class)
+                .optional();
+    }
+
     /** The newest payment of a work order, whatever its state: what its page shows. */
     Optional<Payment> latest(UUID workOrderId) {
         return select("WHERE work_order_id = :workOrder ORDER BY created_at DESC LIMIT 1")
@@ -143,7 +164,7 @@ class Payments {
                         UPDATE payment
                         SET status = :to, reason = :reason, settled_at = now(), updated_at = now(),
                             val_id = :valId, bank_tran_id = :bankTranId, provider_status = :providerStatus,
-                            risk_level = :risk
+                            risk_level = :risk, store_amount_minor = :store
                         WHERE id = :id AND status IN ('INITIATED', 'PENDING')
                         """)
                         .param("id", id)
@@ -153,6 +174,11 @@ class Payments {
                         .param("bankTranId", settlement == null ? null : settlement.bankTranId())
                         .param("providerStatus", settlement == null ? null : settlement.providerStatus())
                         .param("risk", settlement == null ? null : settlement.riskLevel())
+                        .param(
+                                "store",
+                                settlement == null || settlement.storeAmount() == null
+                                        ? null
+                                        : settlement.storeAmount().minor())
                         .update()
                 == 1;
     }

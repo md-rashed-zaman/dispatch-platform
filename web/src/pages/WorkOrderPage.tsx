@@ -92,7 +92,7 @@ export function WorkOrderPage() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          {(w.status === "DRAFT" || w.status === "PUBLISHED" || w.status === "ROUTED") && (
+          {(w.status === "DRAFT" || w.status === "PUBLISHED" || w.status === "ROUTED" || w.status === "ASSIGNED") && (
             <Button variant="secondary" onClick={() => setConfirm("cancel")}>Cancel work order</Button>
           )}
           {w.status === "DRAFT" && (
@@ -200,7 +200,11 @@ export function WorkOrderPage() {
         open={confirm === "cancel"}
         onOpenChange={(open) => !open && setConfirm(null)}
         title="Cancel this work order?"
-        description="Technicians stop seeing it, and it can't be published again."
+        description={
+          w.status === "ASSIGNED"
+            ? "The technician loses the job, and it can't be published again. If you've paid, the full amount is refunded to you."
+            : "Technicians stop seeing it, and it can't be published again."
+        }
         confirm={
           <Button variant="destructive" loading={action.isPending} onClick={() => action.mutate({ name: "cancel" })}>
             Cancel work order
@@ -303,8 +307,12 @@ function Funding({ workOrder }: { workOrder: WorkOrder }) {
         throw e;
       }),
     refetchInterval: (q) => {
-      const open = q.state.data?.status === "PENDING" || q.state.data?.status === "INITIATED";
-      return returned && open && Date.now() - pollingSince.current < 60_000 ? 2000 : false;
+      const p = q.state.data;
+      const open = p?.status === "PENDING" || p?.status === "INITIATED";
+      if (returned && open && Date.now() - pollingSince.current < 60_000) return 2000;
+      // Cancelled with money held: the refund is created just after the cancellation commits.
+      if (workOrder.status === "CANCELLED" && p?.status === "CAPTURED" && !p.refund) return 2000;
+      return false;
     },
   });
   const p = payment.data ?? null;
@@ -336,7 +344,8 @@ function Funding({ workOrder }: { workOrder: WorkOrder }) {
     },
   });
 
-  if (!funded && !p && !FUNDABLE.includes(workOrder.status)) return null;
+  // Paying is only possible while the job is assigned or in progress; afterwards only what happened is shown.
+  if (!funded && !p?.refund && !FUNDABLE.includes(workOrder.status)) return null;
   if (payment.isPending) {
     return (
       <Panel title="Payment">
@@ -357,7 +366,28 @@ function Funding({ workOrder }: { workOrder: WorkOrder }) {
   return (
     <Panel title="Payment">
       <div aria-live="polite">
-        {funded ? (
+        {p?.refund ? (
+          <div className="text-sm">
+          <p className="flex items-center gap-2">
+            {p.refund === "REFUNDED" ? (
+              <CircleCheck aria-hidden className="size-4 text-ok" />
+            ) : p.refund === "FAILED" ? null : (
+              <LoaderCircle aria-hidden className="size-4 animate-spin text-muted-foreground motion-reduce:animate-none" />
+            )}
+            <span className="font-medium">
+              {p.refund === "REFUNDED" ? "Refunded" : p.refund === "FAILED" ? "Refund needs a person" : "Refund in progress"}
+            </span>
+            <span className="data text-[13px]">{money(p.amount)}</span>
+          </p>
+          <p className="mt-1 text-muted-foreground">
+            {p.refund === "REFUNDED"
+              ? "Back to the payment method you used."
+              : p.refund === "FAILED"
+                ? "The payment provider couldn't return it; Dispatch's team will."
+                : "The payment provider is returning it, usually within a few days."}
+          </p>
+          </div>
+        ) : funded ? (
           <p className="flex items-center gap-2 text-sm">
             <CircleCheck aria-hidden className="size-4 text-ok" />
             <span className="font-medium">Funded</span>

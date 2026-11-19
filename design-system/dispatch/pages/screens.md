@@ -152,7 +152,7 @@ Days are UTC days, the same days the daily limit counts (it resets at 6:00 in Dh
 └──────────────────────────────────────────────────────┘
 ```
 
-- Shown from ASSIGNED on, next to Technician. Hidden before assignment and when a job was never paid for and can't be any more.
+- Shown from ASSIGNED on, next to Technician. Hidden before assignment and when a job was never paid for and can't be any more. **Cancel work order** is also offered while ASSIGNED; its dialog says a paid amount is refunded in full.
 - **States, each a sentence and, where there's something to do, one primary button:**
   - not paid: the text above and **Fund this job**;
   - back from the payment page (`?payment=returned`): spinner and "Checking your payment with the provider…", polling every 2 s for up to a minute;
@@ -161,6 +161,7 @@ Days are UTC days, the same days the daily limit counts (it resets at 6:00 in Dh
   - held by the provider's risk check: "Held for review." and why, no button;
   - failed or expired: what happened, the reason, and **Try again**;
   - funded: check icon, **Funded**, the amount in Fira Code and when.
+  - cancelled after paying (step 4.3): **Refund in progress** with a spinner, then **Refunded** with a check icon, the amount, and one muted line on what happens ("Back to the payment method you used."); if the provider refuses, **Refund needs a person** and that Dispatch's team returns it. While the refund is being created just after the cancellation, the panel polls every 2 s.
 - The button keeps its width while loading and is disabled, so a double click can't start two attempts; the request carries one `Idempotency-Key` per click.
 - Wording comes from the payment's state as Dispatch has it, never from the address bar: `declined` and `cancelled` there only choose the sentence while the payment is still open.
 - `aria-live="polite"` on the state line, so "Funded" is announced when the check finishes.

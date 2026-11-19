@@ -109,6 +109,21 @@ api POST "/api/work-orders/$WORK_ORDER/submit" "$RAHIM" | jq '{status}'
 api GET "/api/work-orders/$WORK_ORDER/attachments" "$DISPATCHER" | jq '.[] | {fileName, downloadUrlExpiresAt}'
 api POST "/api/work-orders/$WORK_ORDER/approve" "$DISPATCHER" | jq '{status}'
 
+step "Where the money went: the ledger, then the platform pays Rahim"
+ADMIN=$(login ops.admin)
+PAYOUT=""
+for _ in $(seq 50); do # the approval's postings run just after its commit
+  PAYOUT=$(api GET /api/payouts "$ADMIN" | jq -r --arg wo "$WORK_ORDER" '.[] | select(.workOrderId == $wo) | .id')
+  [[ -n $PAYOUT ]] && break
+  sleep 0.2
+done
+api GET "/api/work-orders/$WORK_ORDER/ledger" "$DISPATCHER" \
+  | jq -c '.[] | {kind, lines: [.lines[] | "\(.account) \(if .debit > 0 then "debit \(.debit)" else "credit \(.credit)" end)"]}'
+say "Every entry balances (the database checks it at commit): escrow held at capture, released at approval, 10% kept as the platform fee."
+api POST "/api/payouts/$PAYOUT/confirm" "$ADMIN" '{"bankReference": "DBBL-TRX-90412"}' | jq '{status, amount, bankReference}'
+api GET "/api/work-orders/$WORK_ORDER" "$DISPATCHER" | jq '{status}'
+api GET /api/ledger/totals "$ADMIN" | jq '{debits, credits, balanced}'
+
 step "The bank's dashboard followed it live"
 sleep 1 # the last change reaches Kafka and the stream within a second
 grep '^data:' "$WORK_DIR/live.txt" | sed 's/^data://' \

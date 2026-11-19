@@ -1,6 +1,7 @@
 package dev.rashed.dispatch.payment;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
@@ -19,6 +20,7 @@ import dev.rashed.dispatch.TestcontainersConfiguration;
 import dev.rashed.dispatch.shared.Money;
 import dev.rashed.dispatch.tenancy.TenantContext;
 import java.net.URI;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -314,6 +316,118 @@ class PaymentFlowTests {
         verify(provider, never()).createSession(any());
     }
 
+    @Test
+    void approvalReleasesTheEscrowAndThePayoutMarksTheJobPaid() throws Exception {
+        var tranId = startAndTranId();
+        given(provider.validate("V")).willReturn(Optional.of(paid(tranId, BUDGET, 0)));
+        ipn(tranId, "V", "VALID");
+        asTenant(() -> jdbc.update("update work_order set status = 'SUBMITTED' where id = ?", workOrder));
+
+        mvc.perform(post("/api/work-orders/{id}/approve", workOrder)
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + dispatcher))
+                .andExpect(status().isOk());
+
+        await().atMost(Duration.ofSeconds(10))
+                .until(() -> count("select count(*) from payout where work_order_id = ?", workOrder) == 1);
+        // 2,500.00 captured; the gateway kept 2.5% (62.50); 10% fee (250.00) earned; 2,250.00 owed to Rahim.
+        mvc.perform(get("/api/work-orders/{id}/ledger", workOrder)
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + dispatcher))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[*].kind")
+                        .value(org.hamcrest.Matchers.contains("CAPTURE", "GATEWAY_FEE", "APPROVAL")));
+        assertThat(ledgerBalance("client_escrow")).isZero();
+        assertThat(ledgerBalance("technician_payable")).isEqualTo(225_000);
+        assertThat(ledgerBalance("platform_revenue")).isEqualTo(25_000);
+
+        var admin = TestTokens.platformAdmin();
+        var payoutId = asTenant(
+                () -> jdbc.queryForObject("select id from payout where work_order_id = ?", UUID.class, workOrder));
+        mvc.perform(get("/api/payouts").header(HttpHeaders.AUTHORIZATION, "Bearer " + admin))
+                .andExpect(jsonPath("$[?(@.id == '%s')].amount.minor".formatted(payoutId))
+                        .value(org.hamcrest.Matchers.contains(225_000)));
+        for (int i = 0; i < 2; i++) { // a repeated confirmation changes nothing
+            mvc.perform(post("/api/payouts/{id}/confirm", payoutId)
+                            .header(HttpHeaders.AUTHORIZATION, "Bearer " + admin)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"bankReference\": \"DBBL-TRX-7781\"}"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.status").value("PAID"));
+        }
+        mvc.perform(post("/api/payouts/{id}/confirm", payoutId)
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + admin)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"bankReference\": \"ANOTHER\"}"))
+                .andExpect(status().isConflict());
+        mvc.perform(post("/api/payouts/{id}/confirm", payoutId)
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + dispatcher)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"bankReference\": \"X\"}"))
+                .andExpect(status().isForbidden());
+
+        assertThat(asTenant(() ->
+                        jdbc.queryForObject("select status from work_order where id = ?", String.class, workOrder)))
+                .isEqualTo("PAID");
+        assertThat(ledgerBalance("technician_payable")).isZero();
+        assertThat(count("select count(*) from journal_entry where work_order_id = ? and kind = 'PAYOUT'", workOrder))
+                .isEqualTo(1);
+        mvc.perform(get("/api/ledger/totals").header(HttpHeaders.AUTHORIZATION, "Bearer " + admin))
+                .andExpect(jsonPath("$.balanced").value(true));
+    }
+
+    @Test
+    void cancellingAFundedJobRefundsTheClient() throws Exception {
+        var tranId = startAndTranId();
+        given(provider.validate("V")).willReturn(Optional.of(paid(tranId, BUDGET, 0)));
+        given(provider.refund(anyString(), anyString(), any(), anyString()))
+                .willReturn(new PaymentProvider.RefundStarted("REF-1"));
+        given(provider.refundStatus("REF-1"))
+                .willReturn(PaymentProvider.RefundState.PROCESSING, PaymentProvider.RefundState.REFUNDED);
+        ipn(tranId, "V", "VALID");
+
+        mvc.perform(post("/api/work-orders/{id}/cancel", workOrder)
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + dispatcher))
+                .andExpect(status().isOk());
+
+        await().atMost(Duration.ofSeconds(10)).until(() -> "PROCESSING".equals(refundStatus()));
+        verify(provider)
+                .refund(
+                        org.mockito.ArgumentMatchers.eq("BANK1"),
+                        anyString(),
+                        org.mockito.ArgumentMatchers.eq(BUDGET),
+                        anyString());
+        assertThat(ledgerBalance("client_escrow")).isEqualTo(250_000); // still held until the provider says done
+
+        ageRefund();
+        reconciler.settleOpen(); // the provider is still processing it
+        assertThat(refundStatus()).isEqualTo("PROCESSING");
+        ageRefund();
+        reconciler.settleOpen();
+        assertThat(refundStatus()).isEqualTo("REFUNDED");
+        assertThat(ledgerBalance("client_escrow")).isZero();
+        assertThat(asTenant(() -> jdbc.queryForObject(
+                        "select status from payment where work_order_id = ?", String.class, workOrder)))
+                .isEqualTo("CAPTURED"); // a refund is a second movement, not a change to the payment
+    }
+
+    @Test
+    void aPaymentThatArrivesAfterTheJobWasCancelledIsRefunded() throws Exception {
+        var tranId = startAndTranId();
+        given(provider.refund(anyString(), anyString(), any(), anyString()))
+                .willReturn(new PaymentProvider.RefundStarted("REF-2"));
+        mvc.perform(post("/api/work-orders/{id}/cancel", workOrder)
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + dispatcher))
+                .andExpect(status().isOk());
+
+        given(provider.validate("LATE")).willReturn(Optional.of(paid(tranId, BUDGET, 0)));
+        ipn(tranId, "LATE", "VALID");
+
+        assertThat(payment()).containsEntry("status", "CAPTURED");
+        assertThat(refundStatus()).isEqualTo("PROCESSING");
+        assertThat(asTenant(() -> jdbc.queryForObject(
+                        "select funded_at from work_order where id = ?", java.sql.Timestamp.class, workOrder)))
+                .isNull();
+    }
+
     private org.springframework.test.web.servlet.ResultActions start(String key) throws Exception {
         return mvc.perform(post("/api/work-orders/{id}/payments", workOrder)
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + dispatcher)
@@ -335,12 +449,15 @@ class PaymentFlowTests {
     }
 
     private static PaymentProvider.Transaction paid(String tranId, Money amount, int risk) {
+        // The gateway keeps 2.5%: store_amount is what it pays us.
+        var store = new Money(amount.minor() - amount.minor() / 40, amount.currency());
         return new PaymentProvider.Transaction(
-                tranId, "VAL-" + tranId, PaymentProvider.Status.PAID, amount, "BANK1", risk, "VALID");
+                tranId, "VAL-" + tranId, PaymentProvider.Status.PAID, amount, store, "BANK1", risk, "VALID");
     }
 
     private static PaymentProvider.Transaction failed(String tranId) {
-        return new PaymentProvider.Transaction(tranId, null, PaymentProvider.Status.FAILED, BUDGET, null, 0, "FAILED");
+        return new PaymentProvider.Transaction(
+                tranId, null, PaymentProvider.Status.FAILED, BUDGET, null, null, 0, "FAILED");
     }
 
     private void age(String interval) {
@@ -359,6 +476,31 @@ class PaymentFlowTests {
         return asTenant(() -> jdbc.queryForList(
                 "select m.provider_status from payment_mismatch m join payment p on p.id = m.payment_id where p.work_order_id = ?",
                 String.class,
+                workOrder));
+    }
+
+    private long ledgerBalance(String account) {
+        return asTenant(() -> jdbc.queryForObject("""
+                select coalesce(sum(case when a.kind in ('ASSET', 'EXPENSE') then l.debit_minor - l.credit_minor
+                                         else l.credit_minor - l.debit_minor end), 0)
+                from journal_line l join journal_entry e on e.id = l.entry_id join ledger_account a on a.code = l.account_code
+                where e.work_order_id = ? and l.account_code = ?
+                """, Long.class, workOrder, account));
+    }
+
+    private String refundStatus() {
+        return asTenant(() -> jdbc.queryForList(
+                        "select r.status from refund r join payment p on p.id = r.payment_id where p.work_order_id = ?",
+                        String.class,
+                        workOrder))
+                .stream()
+                .findFirst()
+                .orElse(null);
+    }
+
+    private void ageRefund() {
+        asTenant(() -> jdbc.update(
+                "update refund set updated_at = now() - interval '2 minutes' where payment_id in (select id from payment where work_order_id = ?)",
                 workOrder));
     }
 

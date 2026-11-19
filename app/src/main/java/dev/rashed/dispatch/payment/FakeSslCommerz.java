@@ -62,6 +62,8 @@ class FakeSslCommerz {
     private final Map<String, List<Txn>> byTranId = new ConcurrentHashMap<>();
     private final Map<String, Txn> byValId = new ConcurrentHashMap<>();
     private final Map<String, Boolean> validated = new ConcurrentHashMap<>();
+    private final Map<String, String> refundsByTransId = new ConcurrentHashMap<>();
+    private final Map<String, Integer> refundChecks = new ConcurrentHashMap<>();
     private final PaymentProperties.SslCommerz settings;
     private final HttpClient http =
             HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(2)).build();
@@ -192,13 +194,53 @@ class FakeSslCommerz {
         return describe(txn, again ? "VALIDATED" : "VALID");
     }
 
+    /** One path, three questions, as at SSLCommerz: a transaction query, a refund, or a refund's status. */
     @GetMapping(path = "/validator/api/merchantTransIDvalidationAPI.php", produces = MediaType.APPLICATION_JSON_VALUE)
     Map<String, Object> query(
-            @RequestParam("tran_id") String tranId,
+            @RequestParam(name = "tran_id", required = false) String tranId,
+            @RequestParam(name = "bank_tran_id", required = false) String bankTranId,
+            @RequestParam(name = "refund_trans_id", required = false) String refundTransId,
+            @RequestParam(name = "refund_ref_id", required = false) String refundRefId,
             @RequestParam("store_id") String storeId,
             @RequestParam("store_passwd") String password) {
         if (!credentialsOk(storeId, password)) {
             return Map.of("APIConnect", "FAILED");
+        }
+        if (bankTranId != null) {
+            var paid = byValId.values().stream()
+                    .anyMatch(
+                            t -> t.bankTranId().equals(bankTranId) && t.status().equals("VALID"));
+            if (!paid) {
+                return Map.of("APIConnect", "DONE", "status", "failed", "errorReason", "Invalid bank transaction id");
+            }
+            // Asked again with the same refund_trans_id: "processing", same reference (as SSLCommerz).
+            var existing = refundsByTransId.get(refundTransId);
+            if (existing != null) {
+                return Map.of(
+                        "APIConnect",
+                        "DONE",
+                        "status",
+                        "processing",
+                        "refund_ref_id",
+                        existing,
+                        "bank_tran_id",
+                        bankTranId);
+            }
+            var ref = "FAKEREF" + System.nanoTime();
+            refundsByTransId.put(refundTransId, ref);
+            refundChecks.put(ref, 0);
+            return Map.of("APIConnect", "DONE", "status", "success", "refund_ref_id", ref, "bank_tran_id", bankTranId);
+        }
+        if (refundRefId != null) {
+            // Processing the first time it's asked about, refunded after: enough to see both states.
+            var checks = refundChecks.merge(refundRefId, 1, Integer::sum);
+            return Map.of(
+                    "APIConnect",
+                    "DONE",
+                    "refund_ref_id",
+                    refundRefId,
+                    "status",
+                    checks > 1 ? "refunded" : "processing");
         }
         var found = byTranId.getOrDefault(tranId, List.of()).stream()
                 .map(t -> describe(t, t.status().equals("VALID") ? "VALID" : "FAILED"))
@@ -216,6 +258,13 @@ class FakeSslCommerz {
         answer.put("currency", t.currency());
         answer.put("currency_type", t.currency());
         answer.put("currency_amount", t.amount());
+        // SSLCommerz pays out the amount minus its charge: 2.5% here, like its documentation's example.
+        answer.put(
+                "store_amount",
+                new BigDecimal(t.amount())
+                        .multiply(new BigDecimal("0.975"))
+                        .setScale(2, java.math.RoundingMode.DOWN)
+                        .toPlainString());
         answer.put("bank_tran_id", t.bankTranId());
         answer.put("risk_level", "0");
         answer.put("risk_title", "Safe");
