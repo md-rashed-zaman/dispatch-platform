@@ -222,6 +222,7 @@ docker compose -f infra/compose/docker-compose.yml exec -T postgres psql -U disp
 - Keycloak admin console: http://localhost:8180 (admin / admin)
 - Object storage (S3 API): http://localhost:8333, bucket `dispatch-media` (created by the app on startup); keys in `infra/compose/seaweedfs/s3.json`
 - Two instances behind a load balancer: `cd app && ./mvnw package -DskipTests`, stop the app on 8080, then `docker compose -f infra/compose/docker-compose.yml --profile cluster up -d --build` (http://localhost:8088; Linux host networking)
+- The image alone: `cd app && ./mvnw package -DskipTests && docker build -t dispatch-app:local .` (238 MB on disk, 187 MB to download, half the old image: a jlink'ed Java 21 runtime on distroless, non-root, no shell; [ADR 0020](docs/adr/0020-image-with-a-jlinked-runtime-on-distroless.md)). Probes: `/livez`, `/readyz`. CI builds it for amd64 and arm64.
 - Grafana (metrics, traces, dashboards, alerts): http://localhost:3000, folder *Dispatch*
 - Mailpit (every email the app sends, nothing leaves the machine): http://localhost:8025
 - Live updates: `curl -N -H "Authorization: Bearer $TOKEN" http://localhost:8080/api/live/work-orders`

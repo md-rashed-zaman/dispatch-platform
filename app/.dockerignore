@@ -1,0 +1,4 @@
+# The image is built from the jar Maven made (see Dockerfile): send only that to the builder, not the sources,
+# test reports or the 100+ MB of target/ intermediates.
+*
+!target/dispatch-*.jar

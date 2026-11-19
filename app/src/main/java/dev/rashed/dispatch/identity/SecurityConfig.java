@@ -28,6 +28,9 @@ class SecurityConfig {
             throws Exception {
         return http.authorizeHttpRequests(auth -> auth.requestMatchers(
                                 "/actuator/health/**",
+                                // The same probes on the main port (step 5.1): Kubernetes sends no token.
+                                "/livez",
+                                "/readyz",
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
