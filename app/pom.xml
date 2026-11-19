@@ -104,6 +104,12 @@
             <version>${resilience4j.version}</version>
         </dependency>
         <!-- Scheduled jobs run on one instance at a time: a lock row in PostgreSQL (T22). -->
+        <!-- Feature flags behind the OpenFeature standard API (step 4.4): our own provider today, a vendor's later -->
+        <dependency>
+            <groupId>dev.openfeature</groupId>
+            <artifactId>sdk</artifactId>
+            <version>1.23.0</version>
+        </dependency>
         <dependency>
             <groupId>net.javacrumbs.shedlock</groupId>
             <artifactId>shedlock-spring</artifactId>

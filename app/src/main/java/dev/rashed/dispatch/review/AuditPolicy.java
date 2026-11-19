@@ -48,7 +48,8 @@ final class AuditPolicy {
                     + Math.round(threshold * 100) + "%).");
         }
         if (!autoApprove) {
-            return review("Every item looks done (" + sure + "% sure); auto-approval is switched off.");
+            return review(
+                    "Every item looks done (" + sure + "% sure); auto-approval is switched off for this company.");
         }
         var shown = a.items().size() == 1
                 ? "The checklist item is shown"

@@ -1,5 +1,7 @@
 package dev.rashed.dispatch.review;
 
+import dev.openfeature.sdk.Client;
+import dev.openfeature.sdk.ImmutableContext;
 import dev.rashed.dispatch.ai.CompletionCheck;
 import dev.rashed.dispatch.media.WorkOrderPhotos;
 import dev.rashed.dispatch.outbox.Topics;
@@ -30,6 +32,7 @@ class CompletionAuditor {
     private static final Logger log = LoggerFactory.getLogger(CompletionAuditor.class);
 
     static final String CONSUMER = "review-auditor";
+    static final String AUTO_APPROVE_FLAG = "ai.auto-approve";
 
     private final WorkOrderCompletion workOrders;
     private final WorkOrderPhotos photos;
@@ -37,6 +40,7 @@ class CompletionAuditor {
     private final CompletionAudits audits;
     private final ReviewProperties review;
     private final JsonMapper json;
+    private final Client flags;
 
     CompletionAuditor(
             WorkOrderCompletion workOrders,
@@ -44,7 +48,9 @@ class CompletionAuditor {
             CompletionCheck check,
             CompletionAudits audits,
             ReviewProperties review,
-            JsonMapper json) {
+            JsonMapper json,
+            Client flags) {
+        this.flags = flags;
         this.workOrders = workOrders;
         this.photos = photos;
         this.check = check;
@@ -98,10 +104,26 @@ class CompletionAuditor {
                         proof.stream()
                                 .map(p -> new CompletionCheck.Photo(p.contentType(), p.bytes()))
                                 .toList()));
-        var decision = AuditPolicy.decide(assessment, proof.size(), review.threshold(), review.autoApprove());
+        // The experiment (step 4.4): auto-approval only for the companies the flag picks, and never with the global
+        // switch off. Whether the AI would have approved is kept for both arms: it's what the arms are compared on.
+        var autoApprove = review.autoApprove()
+                && flags.getBooleanValue(AUTO_APPROVE_FLAG, false, new ImmutableContext(tenant.toString()));
+        var wouldApprove = AuditPolicy.decide(assessment, proof.size(), review.threshold(), true)
+                        .recommendation()
+                == AuditPolicy.Recommendation.APPROVE;
+        var decision = AuditPolicy.decide(assessment, proof.size(), review.threshold(), autoApprove);
 
         var auditId = UUID.randomUUID();
-        if (!audits.insert(auditId, tenant, workOrderId, eventId, assessment, proof.size(), decision)) {
+        if (!audits.insert(
+                auditId,
+                tenant,
+                workOrderId,
+                eventId,
+                assessment,
+                proof.size(),
+                decision,
+                autoApprove ? "on" : "off",
+                wouldApprove)) {
             return; // this submission was audited already
         }
         if (decision.recommendation() == AuditPolicy.Recommendation.APPROVE) {
