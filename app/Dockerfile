@@ -47,10 +47,12 @@ COPY --from=layers /build/extracted/application/ ./
 # (runAsNonRoot).
 USER 65532:65532
 EXPOSE 8080
-# - Heap from the container's memory limit, not the machine's: 70% leaves room for metaspace, threads, direct
-#   buffers and the code cache (a 640 MB limit gives a ~448 MB heap).
+# - Heap from the container's memory limit, not the machine's: half of it. The rest is needed: this app uses
+#   ~420 MB outside the heap (metaspace alone ~190 MB, then the code cache, threads, GC and malloc). Run it with a
+#   1 GiB limit: a 512 MB heap. (70% of 640 MB looked fine under Docker, which lets a container swap; on
+#   Kubernetes, with no swap, it was OOMKilled: step 5.2.)
 # - Out of memory: exit, so the orchestrator restarts a clean JVM instead of keeping a half-broken one.
 # - JAVA_TOOL_OPTIONS adds or overrides flags per environment without rebuilding.
 # Exec form: java is PID 1 and gets SIGTERM directly, so graceful shutdown runs (server.shutdown).
-ENTRYPOINT ["java", "-XX:MaxRAMPercentage=70", "-XX:+ExitOnOutOfMemoryError", \
+ENTRYPOINT ["java", "-XX:MaxRAMPercentage=50", "-XX:+ExitOnOutOfMemoryError", \
             "org.springframework.boot.loader.launch.JarLauncher"]

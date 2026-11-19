@@ -111,7 +111,9 @@ spring:
           # Spring downloads Keycloak's public keys (JWKS) once and caches them, then checks each token's
           # signature, expiry and audience locally: no call to Keycloak per request. The issuer check is a
           # bean in SecurityConfig, so tests (which swap in a test public key) run the exact same checks.
-          jwk-set-uri: ${dispatch.oauth.issuer-uri}/protocol/openid-connect/certs
+          # KEYCLOAK_JWKS_URI: where the app itself reaches Keycloak when that differs from the issuer users see
+          # (Kubernetes: http://keycloak:8180 inside the cluster, http://localhost:8180 in tokens).
+          jwk-set-uri: ${KEYCLOAK_JWKS_URI:${dispatch.oauth.issuer-uri}/protocol/openid-connect/certs}
           audiences: dispatch-api
           authorities-claim-name: roles   # flat claim added by the realm's dispatch-api scope
           authority-prefix: ROLE_         # DISPATCHER -> ROLE_DISPATCHER, so hasRole('DISPATCHER') works

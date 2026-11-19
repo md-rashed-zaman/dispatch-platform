@@ -1,0 +1,54 @@
+# PostgreSQL 17 with PostGIS and pgvector (infra/compose/postgres): one instance, data on a PersistentVolumeClaim.
+# A StatefulSet, not a Deployment: a stable name (postgres-0) and its own volume that follows it across restarts.
+# Production would use an operator (CloudNativePG) or a managed database for replicas, failover and backups (T38).
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+spec:
+  selector: { app: postgres }
+  ports:
+    - { name: postgres, port: 5432 }
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres
+spec:
+  serviceName: postgres
+  replicas: 1
+  selector:
+    matchLabels: { app: postgres }
+  template:
+    metadata:
+      labels: { app: postgres }
+    spec:
+      enableServiceLinks: false
+      containers:
+        - name: postgres
+          image: dispatch-postgres:local # built by compose, loaded into kind by scripts/k8s-up.sh
+          imagePullPolicy: Never
+          env:
+            - { name: POSTGRES_DB, value: dispatch }
+            - name: POSTGRES_USER
+              valueFrom: { secretKeyRef: { name: dispatch-secrets, key: POSTGRES_USER } }
+            - name: POSTGRES_PASSWORD
+              valueFrom: { secretKeyRef: { name: dispatch-secrets, key: POSTGRES_PASSWORD } }
+            - { name: PGDATA, value: /var/lib/postgresql/data/pgdata } # a subdirectory: the volume root has lost+found
+          ports:
+            - { containerPort: 5432 }
+          readinessProbe:
+            exec: { command: [sh, -c, 'pg_isready -U "$POSTGRES_USER" -d dispatch'] }
+            periodSeconds: 5
+          resources:
+            requests: { cpu: 100m, memory: 384Mi }
+            limits: { memory: 512Mi }
+          volumeMounts:
+            - { name: data, mountPath: /var/lib/postgresql/data }
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: [ReadWriteOnce]
+        resources:
+          requests: { storage: 2Gi }

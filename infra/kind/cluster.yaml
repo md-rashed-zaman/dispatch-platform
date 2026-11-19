@@ -1,0 +1,12 @@
+# One-node local cluster for step 5.2: scripts/k8s-up.sh creates it. The app's and Keycloak's NodePorts are mapped
+# to the same host ports the compose stack uses, so the demo scripts, the web app and token issuers stay the same
+# (http://localhost:8080 and http://localhost:8180). Stop the compose stack first: the ports would clash.
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: dispatch
+nodes:
+  - role: control-plane
+    extraPortMappings:
+      - { containerPort: 30080, hostPort: 8080, listenAddress: 127.0.0.1 } # app
+      - { containerPort: 30180, hostPort: 8180, listenAddress: 127.0.0.1 } # Keycloak
+      - { containerPort: 30025, hostPort: 8025, listenAddress: 127.0.0.1 } # Mailpit inbox

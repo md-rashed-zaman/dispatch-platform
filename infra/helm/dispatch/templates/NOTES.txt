@@ -1,0 +1,3 @@
+Dispatch {{ .Chart.AppVersion }}: {{ .Values.replicaCount }} pods behind Service {{ .Release.Name }}.
+  kubectl rollout status deployment/{{ .Release.Name }}
+  curl http://localhost:8080/readyz        (kind: NodePort {{ .Values.service.nodePort }} is mapped to localhost:8080)

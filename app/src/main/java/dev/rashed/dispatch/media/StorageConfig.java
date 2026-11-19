@@ -9,6 +9,7 @@ import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.S3Configuration;
+import software.amazon.awssdk.services.s3.model.BucketAlreadyOwnedByYouException;
 import software.amazon.awssdk.services.s3.model.NoSuchBucketException;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 
@@ -49,7 +50,11 @@ class StorageConfig {
             try {
                 s3.headBucket(b -> b.bucket(storage.bucket()));
             } catch (NoSuchBucketException e) {
-                s3.createBucket(b -> b.bucket(storage.bucket()));
+                try {
+                    s3.createBucket(b -> b.bucket(storage.bucket()));
+                } catch (BucketAlreadyOwnedByYouException alreadyMade) {
+                    // Another instance starting at the same time made it first (a Deployment's pods start together).
+                }
             }
         };
     }

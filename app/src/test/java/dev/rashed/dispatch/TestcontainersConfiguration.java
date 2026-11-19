@@ -31,7 +31,7 @@ public class TestcontainersConfiguration {
             .withCommand("postgres", "-c", "fsync=off", "-c", "max_connections=500");
 
     // Object storage with the S3 API, same image and credentials as infra/compose.
-    static final GenericContainer<?> SEAWEEDFS = new GenericContainer<>(
+    public static final GenericContainer<?> SEAWEEDFS = new GenericContainer<>(
                     DockerImageName.parse("chrislusf/seaweedfs:4.51"))
             .withCopyFileToContainer(
                     MountableFile.forHostPath("../infra/compose/seaweedfs/s3.json"), "/etc/seaweedfs/s3.json")

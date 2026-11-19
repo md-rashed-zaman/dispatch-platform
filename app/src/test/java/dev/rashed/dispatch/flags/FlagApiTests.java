@@ -36,6 +36,9 @@ class FlagApiTests {
     @Autowired
     Client flags;
 
+    @Autowired
+    org.springframework.jdbc.core.JdbcTemplate jdbc;
+
     final String admin = TestTokens.platformAdmin();
 
     @Test
@@ -72,6 +75,23 @@ class FlagApiTests {
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + admin))
                 .andExpect(jsonPath("$.variant").value("on"))
                 .andExpect(jsonPath("$.reason").value("TARGETING_MATCH"));
+    }
+
+    @Test
+    void anAdminReadsWhatIsReallyThereNotThisInstancesSnapshot() throws Exception {
+        etag(); // this instance's snapshot is loaded
+        // Another instance changes the flag: this one's snapshot learns it only at its next refresh.
+        jdbc.update("update feature_flag set rollout_percent = 7, version = version + 1 where key = ?", FLAG);
+        var version = jdbc.queryForObject("select version from feature_flag where key = ?", Long.class, FLAG);
+
+        mvc.perform(get("/api/flags/{key}", FLAG).header(HttpHeaders.AUTHORIZATION, "Bearer " + admin))
+                .andExpect(header().string(HttpHeaders.ETAG, "\"" + version + "\""))
+                .andExpect(jsonPath("$.rolloutPercent").value(7));
+        mvc.perform(get("/api/flags", FLAG).header(HttpHeaders.AUTHORIZATION, "Bearer " + admin))
+                .andExpect(jsonPath("$[?(@.key == '%s')].rolloutPercent".formatted(FLAG))
+                        .value(7));
+        // So an edit made from that read goes through instead of a 412 (step 5.2: two pods, half the saves failed).
+        change(etag(), 7, List.of(), "edit after another instance's change").andExpect(status().isOk());
     }
 
     @Test

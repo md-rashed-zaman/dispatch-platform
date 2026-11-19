@@ -57,14 +57,17 @@ public class FlagService {
         this.json = json;
     }
 
+    // The admin reads come from the database, not this instance's snapshot: another instance's change reaches the
+    // snapshot only at its next refresh, and an edit started from a stale read (its ETag) would fail with 412.
+    // Evaluation (DispatchFlagProvider) keeps the snapshot.
     public List<Flag> all() {
-        return store.all().stream()
+        return store.refresh().values().stream()
                 .sorted(java.util.Comparator.comparing(Flag::key))
                 .toList();
     }
 
     public Flag get(String key) {
-        return store.get(key).orElseThrow(() -> new NotFoundException("Flag", key));
+        return current(key);
     }
 
     @Transactional
