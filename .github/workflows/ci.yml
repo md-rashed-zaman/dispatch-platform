@@ -45,6 +45,52 @@ jobs:
           path: app/target/site/jacoco/
           if-no-files-found: ignore
 
+  # The container image for amd64 and arm64 (step 5.1). The jar is built once, natively; only the image's
+  # packaging runs per platform (QEMU for arm64), since a jar is the same on every CPU. Pushed nowhere yet (5.4).
+  image:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+
+      - name: Package the jar
+        working-directory: app
+        run: ./mvnw -B -ntp -DskipTests package
+
+      - uses: docker/setup-qemu-action@v4
+      - uses: docker/setup-buildx-action@v4
+
+      - name: Build for amd64 and arm64
+        uses: docker/build-push-action@v7
+        with:
+          context: app
+          platforms: linux/amd64,linux/arm64
+          push: false
+          build-args: |
+            VERSION=${{ github.sha }}
+            REVISION=${{ github.sha }}
+
+      # A multi-platform build can't be loaded into the local Docker, so check the amd64 one separately: the
+      # trimmed Java runtime starts, and the image runs as the non-root user.
+      - name: Build amd64 and load it
+        uses: docker/build-push-action@v7
+        with:
+          context: app
+          platforms: linux/amd64
+          load: true
+          tags: dispatch-app:ci
+      - name: Check the image
+        run: |
+          docker run --rm --entrypoint java dispatch-app:ci -version
+          test "$(docker image inspect dispatch-app:ci --format '{{.Config.User}}')" = "65532:65532"
+          docker image ls dispatch-app:ci
+
   # The dispatcher web app: type check and production build
   web:
     runs-on: ubuntu-latest

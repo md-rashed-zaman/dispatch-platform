@@ -1,6 +1,10 @@
 spring:
   application:
     name: dispatch
+  lifecycle:
+    # On SIGTERM: stop taking requests, let the ones in flight finish for up to 20 s, then stop the rest (Kafka
+    # listeners, schedulers, pools). Inside Kubernetes' default 30 s grace period, with room to spare (step 5.1).
+    timeout-per-shutdown-phase: 20s
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/dispatch}
     # Not the owner or a superuser, so row-level security applies to every query the app runs (ADR 0003).
@@ -243,6 +247,11 @@ springdoc:
       client-id: dispatch-web
       use-pkce-with-authorization-code-grant: true
 
+server:
+  # Graceful (Spring Boot's default, stated here): on SIGTERM the server stops accepting connections and waits for
+  # requests in flight, up to spring.lifecycle.timeout-per-shutdown-phase.
+  shutdown: graceful
+
 management:
   # Observability (step 2.7, T25): metrics and traces over OTLP to Grafana's LGTM stack (compose: lgtm).
   tracing:
@@ -286,7 +295,8 @@ management:
   endpoint:
     health:
       probes:
-        enabled: true          # /actuator/health/liveness and /readiness for Kubernetes later
+        enabled: true          # /actuator/health/liveness and /readiness for Kubernetes
+        add-additional-paths: true   # also /livez and /readyz on the main port (step 5.1)
       group:
         readiness:
           # Not ready without the database: the load balancer stops sending traffic here. Liveness leaves

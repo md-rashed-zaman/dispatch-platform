@@ -37,6 +37,10 @@ class SecurityTests {
     @Test
     void healthIsPublic() throws Exception {
         mvc.perform(get("/actuator/health")).andExpect(status().isOk());
+        // Kubernetes probes carry no token (step 5.1).
+        mvc.perform(get("/livez")).andExpect(status().isOk());
+        mvc.perform(get("/readyz")).andExpect(status().isOk());
+        mvc.perform(get("/actuator/health/readiness")).andExpect(status().isOk());
     }
 
     @Test
