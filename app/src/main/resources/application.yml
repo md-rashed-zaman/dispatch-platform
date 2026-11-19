@@ -197,6 +197,23 @@ dispatch:
     auto-approve: ${AI_AUTO_APPROVE:true}   # off: every job goes to a person, with the AI's assessment attached
     threshold: 0.9                    # from the eval with prompt v2: no false approval, 29 of 32 done jobs automated (evals/results/audit.md)
     max-photos: 6                     # about 1,000 tokens each
+  payments:
+    # Step 4.2 (ADR 0015, docs/diagrams/payment-flow.md). Off by default so local runs and the demo work without
+    # a payment provider; on, a technician can start only after the client's payment is captured.
+    required: ${PAYMENTS_REQUIRED:false}
+    callback-base-url: ${PAYMENTS_CALLBACK_BASE_URL:http://localhost:8080}   # this API, as the provider reaches it
+    stale-after: PT1M                 # an INITIATED payment this old never got a payment page
+    reconcile-after: PT15M            # open this long: ask the provider (the notice may be lost)
+    session-lifetime: PT2H            # nothing paid by then: EXPIRED (a new attempt may start)
+    sslcommerz:
+      # Without a sandbox store, a stand-in at /fake-sslcommerz plays SSLCommerz. With one: SSLCOMMERZ_FAKE=false,
+      # SSLCOMMERZ_BASE_URL=https://sandbox.sslcommerz.com and the store's id and password.
+      base-url: ${SSLCOMMERZ_BASE_URL:http://localhost:8080/fake-sslcommerz}
+      store-id: ${SSLCOMMERZ_STORE_ID:dispatch-fake}
+      store-password: ${SSLCOMMERZ_STORE_PASSWORD:dispatch-fake}
+      fake: ${SSLCOMMERZ_FAKE:true}
+      connect-timeout: PT3S
+      read-timeout: PT10S
   instance-name: ${INSTANCE_NAME:${HOSTNAME:local}}   # in logs, to see which instance did what
   web:
     base-url: ${WEB_BASE_URL:http://localhost:5173}   # the dashboard, for links in emails

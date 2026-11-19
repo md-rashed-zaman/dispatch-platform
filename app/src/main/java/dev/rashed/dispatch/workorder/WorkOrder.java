@@ -104,6 +104,9 @@ public class WorkOrder {
     @OrderBy("position")
     private List<ChecklistItem> checklist = new ArrayList<>();
 
+    /** When the client's payment was captured (step 4.2): starting work requires it when payments are on. */
+    private @Nullable Instant fundedAt;
+
     /** When it was last published: the SLA clock (step 2.5). */
     private @Nullable Instant publishedAt;
 
@@ -278,8 +281,28 @@ public class WorkOrder {
         events.add(new WorkOrderAssigned(id, tenantId, technicianId, title, Timestamps.now()));
     }
 
-    public void start() {
+    /**
+     * @param fundingRequired whether the client must have paid first (dispatch.payments.required): the technician
+     *     knows the money exists before driving out (ADR 0015)
+     */
+    public void start(boolean fundingRequired) {
+        requireAllowed(Transition.START);
+        if (fundingRequired && fundedAt == null) {
+            throw new BusinessRuleException(
+                    "not-funded", "The client hasn't funded this job yet. Wait for the payment before you start.");
+        }
         apply(Transition.START);
+    }
+
+    /** The client's payment was captured. Once: a second capture can't happen (one live payment per work order). */
+    public void markFunded(Instant at) {
+        if (status != WorkOrderStatus.ASSIGNED && status != WorkOrderStatus.IN_PROGRESS) {
+            throw new BusinessRuleException(
+                    "not-fundable", "Only an assigned work order can be funded, not " + status + ".");
+        }
+        if (fundedAt == null) {
+            fundedAt = at;
+        }
     }
 
     public void submit(@Nullable String notes) {
@@ -399,6 +422,10 @@ public class WorkOrder {
     /** Read-only view: callers can't add or remove items behind the aggregate's back. */
     public List<ChecklistItem> checklist() {
         return List.copyOf(checklist);
+    }
+
+    public @Nullable Instant fundedAt() {
+        return fundedAt;
     }
 
     public @Nullable Instant publishedAt() {

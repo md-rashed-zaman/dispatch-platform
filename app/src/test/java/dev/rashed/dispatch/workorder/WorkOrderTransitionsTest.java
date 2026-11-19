@@ -37,7 +37,7 @@ class WorkOrderTransitionsTest {
         ROUTE(WorkOrder::route),
         OFFERS_EXPIRED(WorkOrder::offersExpired),
         ASSIGN(w -> w.assign(TECHNICIAN)),
-        START(WorkOrder::start),
+        START(w -> w.start(false)),
         SUBMIT(w -> w.submit(null)),
         APPROVE(WorkOrder::approve),
         REJECT(w -> w.reject("Photo of the receipt is missing")),

@@ -141,3 +141,27 @@ Days are UTC days, the same days the daily limit counts (it resets at 6:00 in Dh
 - **Empty:** "No AI calls in the last 30 days." and what starts them. **Not an admin:** "Only your company's admins can see AI usage." and no period switch.
 - Skeletons in the shape of the tiles, chart and table while loading.
 
+### Payment (work order page, step 4.2)
+
+```
+┌ PAYMENT ─────────────────────────────────────────────┐
+│ The technician starts once you've paid ৳3,000.00, on  │
+│ the provider's page: card, bKash, Nagad or bank. The │
+│ money is held until you approve the work.            │
+│ [▭ Fund this job]                                    │
+└──────────────────────────────────────────────────────┘
+```
+
+- Shown from ASSIGNED on, next to Technician. Hidden before assignment and when a job was never paid for and can't be any more.
+- **States, each a sentence and, where there's something to do, one primary button:**
+  - not paid: the text above and **Fund this job**;
+  - back from the payment page (`?payment=returned`): spinner and "Checking your payment with the provider…", polling every 2 s for up to a minute;
+  - declined or cancelled on the provider's page: "The payment was declined." / "You cancelled the payment." and **Try again** (same page);
+  - started, not confirmed after that: "Payment started, not confirmed yet. If you've paid, it's confirmed within 15 minutes." and **Continue to payment**;
+  - held by the provider's risk check: "Held for review." and why, no button;
+  - failed or expired: what happened, the reason, and **Try again**;
+  - funded: check icon, **Funded**, the amount in Fira Code and when.
+- The button keeps its width while loading and is disabled, so a double click can't start two attempts; the request carries one `Idempotency-Key` per click.
+- Wording comes from the payment's state as Dispatch has it, never from the address bar: `declined` and `cancelled` there only choose the sentence while the payment is still open.
+- `aria-live="polite"` on the state line, so "Funded" is announced when the check finishes.
+

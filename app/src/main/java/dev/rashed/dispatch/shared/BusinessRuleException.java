@@ -8,13 +8,21 @@ import java.util.Map;
  */
 public class BusinessRuleException extends IllegalStateException {
 
+    private final String type;
+
     public BusinessRuleException(String message) {
+        this("business-rule", message);
+    }
+
+    /** @param type stable kind of problem that clients can switch on, like {@code not-funded} */
+    public BusinessRuleException(String type, String message) {
         super(message);
+        this.type = type;
     }
 
     /** Stable kind of problem that clients can switch on, like {@code invalid-transition}. */
     public String type() {
-        return "business-rule";
+        return type;
     }
 
     /** Extra machine-readable details for the error response. */
