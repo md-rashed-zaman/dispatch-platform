@@ -72,4 +72,19 @@ class WorkOrderTest {
         assertThatThrownBy(() -> draft.markFunded(java.time.Instant.now()))
                 .isInstanceOf(dev.rashed.dispatch.shared.BusinessRuleException.class);
     }
+
+    @Test
+    void onlyAnAssignedJobThatHasntStartedCanBeReassigned() {
+        var first = UUID.randomUUID();
+        var second = UUID.randomUUID();
+        var workOrder = WorkOrders.inStatus(tenantId, first, WorkOrderStatus.ASSIGNED);
+
+        assertThatThrownBy(() -> workOrder.reassign(first)).hasMessageContaining("already has");
+        workOrder.reassign(second);
+        assertThat(workOrder.technicianId()).isEqualTo(second);
+        assertThat(workOrder.status()).isEqualTo(WorkOrderStatus.ASSIGNED);
+
+        workOrder.start(false);
+        assertThatThrownBy(() -> workOrder.reassign(first)).hasMessageContaining("hasn't started");
+    }
 }

@@ -6,17 +6,20 @@ Each bounded context becomes one Spring Modulith module. Arrows show who reacts 
 flowchart LR
   ID["identity / tenancy"] --> WO["workorder"]
   TECH["technician"] --> MATCH["matching"]
-  WO -- "WorkOrderPublished, OffersExhausted" --> MATCH
-  MATCH -- "OffersSent" --> WO
-  WO -- "WorkOrderAssigned" --> PAY["payment"]
-  PAY -- "EscrowFunded" --> WO
-  WO -- "WorkSubmitted" --> AI["ai"]
-  AI -- "AuditCompleted" --> WO
-  WO -- "WorkApproved" --> PAY
+  WO -- "WorkOrderPublished" --> MATCH
+  MATCH -- "offers (routing API)" --> WO
+  WO -- "SUBMITTED (Kafka)" --> REVIEW["review"]
+  REVIEW -- "completion check" --> AI["ai"]
+  REVIEW -- "approve as system" --> WO
+  FLAGS["flags (OpenFeature)"] -.-> REVIEW
+  PAY["payment"] -- "mark funded, mark paid" --> WO
+  WO -- "APPROVED, CANCELLED" --> PAY
   PAY -- "postings" --> LED["ledger"]
-  WO -- "most events" --> NOTIF["notification"]
-  FLAGS["flags"] -.-> WO
+  WO -- "status changes" --> NOTIF["notification"]
   MEDIA["media"] -.-> WO
+  ASSIST["assistant (MCP)"] -- "the user's own calls" --> WO
+  ASSIST --> MATCH
+  ASSIST --> TECH
 ```
 
 ## Module ownership
@@ -31,8 +34,10 @@ flowchart LR
 | `payment` | Payment provider integration, escrow funding, payouts | Accounting entries |
 | `ledger` | Double-entry accounts and journal entries | Payment provider calls |
 | `notification` | Email and in-app messages | Business decisions |
-| `ai` | AI gateway, intake parsing, completion audit, prompts | Final approval decisions |
-| `flags` | Feature flags and percentage rollouts | |
+| `ai` | AI gateway, intake parsing, the completion check, prompts | Final approval decisions |
+| `review` | Completion audits, the approval policy, the review queue, the auto-approval experiment | The vision model call |
+| `flags` | Feature flags, rollouts, their audit; read through OpenFeature | What a flag means to a feature |
+| `assistant` | MCP tools for AI clients, confirmations for writes, the tool-call audit | Any rule the services already enforce |
 
 ## Rules
 

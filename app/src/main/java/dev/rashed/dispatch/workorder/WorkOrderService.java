@@ -118,6 +118,24 @@ public class WorkOrderService {
         return change(id, workOrder -> workOrder.reject(reason));
     }
 
+    @Transactional
+    public WorkOrderView reassign(UUID id, UUID technicianId) {
+        return change(id, workOrder -> workOrder.reassign(technicianId));
+    }
+
+    /** Work still waiting for a technician that the SLA policy had to act on (step 2.5): widened or escalated. */
+    @Transactional(readOnly = true)
+    public List<SlaBreach> slaBreaches(int limit) {
+        return workOrders.findSlaBreaches(Limit.of(limit)).stream()
+                .map(w -> new SlaBreach(WorkOrderSummary.of(w), w.slaStage(), w.publishedAt()))
+                .toList();
+    }
+
+    public record SlaBreach(
+            WorkOrderSummary workOrder,
+            SlaStage stage,
+            @Nullable Instant waitingSince) {}
+
     // save, not just dirty checking: Spring Data publishes the work order's events on save. The flush
     // writes now, so the returned view carries the new version, and a concurrent change made since we
     // loaded fails here (@Version) instead of being overwritten.

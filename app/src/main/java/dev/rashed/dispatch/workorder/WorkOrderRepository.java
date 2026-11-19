@@ -27,6 +27,15 @@ interface WorkOrderRepository extends JpaRepository<WorkOrder, UUID> {
 
     List<WorkOrder> findByStatusOrderByCreatedAtDescIdDesc(WorkOrderStatus status, Limit limit);
 
+    /** Waiting for a technician, and the SLA policy acted on it; oldest first. */
+    @Query("""
+            select w from WorkOrder w
+            where w.status in (dev.rashed.dispatch.workorder.WorkOrderStatus.PUBLISHED, dev.rashed.dispatch.workorder.WorkOrderStatus.ROUTED)
+              and w.slaStage <> dev.rashed.dispatch.workorder.SlaStage.ON_TRACK
+            order by w.publishedAt
+            """)
+    List<WorkOrder> findSlaBreaches(Limit limit);
+
     @Query(
             "select w from WorkOrder w where (w.createdAt, w.id) < (:createdAt, :id) order by w.createdAt desc, w.id desc")
     List<WorkOrder> findPageAfter(Instant createdAt, UUID id, Limit limit);

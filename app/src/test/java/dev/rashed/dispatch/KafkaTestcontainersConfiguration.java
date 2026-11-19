@@ -11,7 +11,9 @@ public class KafkaTestcontainersConfiguration {
 
     @Bean
     KafkaContainer kafkaContainer() {
-        return new KafkaContainer("apache/kafka:4.3.2");
+        // Kafka's default 60 s to log "RUNNING" isn't enough on a loaded machine (a whole suite of contexts, swap):
+        // the step 4.5 run timed out here once. Startup is normally ~15 s, so 3 minutes only matters when it's slow.
+        return new KafkaContainer("apache/kafka:4.3.2").withStartupTimeout(java.time.Duration.ofMinutes(3));
     }
 
     @Bean
