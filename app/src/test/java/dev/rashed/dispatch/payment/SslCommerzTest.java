@@ -59,6 +59,7 @@ class SslCommerzTest {
                 Duration.ofMinutes(1),
                 Duration.ofMinutes(15),
                 Duration.ofHours(2),
+                1000,
                 new PaymentProperties.SslCommerz(
                         URI.create("http://127.0.0.1:" + server.getAddress().getPort()),
                         "testbox",

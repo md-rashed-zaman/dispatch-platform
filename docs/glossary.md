@@ -32,6 +32,8 @@ These words mean exactly this, in conversations, docs and code. If a word change
 | **IPN** | Instant Payment Notification: the provider's server-to-server POST after a payment. A hint about which payment to check, never proof. | `POST /api/payments/sslcommerz/ipn` |
 | **Capture** | A payment confirmed by Dispatch's own call to the provider (validation or status query): the money is in escrow. | payment status `CAPTURED` |
 | **Idempotency key** | A value the client sends with a request that moves money (`Idempotency-Key` header), the same on every retry: the retry gets the first answer instead of doing it again. | `idempotency_key` table, ADR 0016 |
+| **Journal entry** | One movement of money in the ledger: two or more lines whose debits equal their credits. Never edited; a wrong one is reversed by a mirror entry. | `journal_entry`, `journal_line`, ADR 0017 |
+| **Refund** | Returning a captured payment to the client (the job was cancelled before work started). A second movement of money; the payment stays captured. | `refund` table |
 | **Reconciliation** | Comparing our payment states with the provider's, to settle unknown outcomes and find mismatches. | `PaymentReconciler` |
 | **SLA** | Time limits for a work order (e.g. assigned within 2 hours of publishing). | SLA policy job |
 

@@ -1,6 +1,7 @@
 package dev.rashed.dispatch.payment;
 
 import dev.rashed.dispatch.identity.CurrentUser;
+import dev.rashed.dispatch.ledger.Ledger;
 import dev.rashed.dispatch.payment.PaymentProvider.Status;
 import dev.rashed.dispatch.payment.Payments.Payment;
 import dev.rashed.dispatch.payment.Payments.Settlement;
@@ -39,7 +40,10 @@ class PaymentService {
 
     private static final Logger log = LoggerFactory.getLogger(PaymentService.class);
 
-    /** What the API returns. {@code redirectUrl} only while the customer can still pay on it. */
+    /**
+     * What the API returns. {@code redirectUrl} only while the customer can still pay on it; {@code refund} once
+     * the money is being (or has been) returned.
+     */
     record PaymentView(
             UUID id,
             UUID workOrderId,
@@ -48,9 +52,14 @@ class PaymentService {
             @Nullable URI redirectUrl,
             @Nullable String reason,
             Instant createdAt,
-            @Nullable Instant settledAt) {
+            @Nullable Instant settledAt,
+            Refunds.@Nullable State refund) {
 
         static PaymentView of(Payment p) {
+            return of(p, null);
+        }
+
+        static PaymentView of(Payment p, Refunds.@Nullable State refund) {
             return new PaymentView(
                     p.id(),
                     p.workOrderId(),
@@ -59,7 +68,8 @@ class PaymentService {
                     p.state() == State.PENDING ? p.gatewayUrl() : null,
                     p.reason(),
                     p.createdAt(),
-                    p.settledAt());
+                    p.settledAt(),
+                    refund);
         }
     }
 
@@ -71,6 +81,9 @@ class PaymentService {
     private final JdbcClient jdbc;
     private final TransactionTemplate transaction;
     private final MeterRegistry metrics;
+    private final Ledger ledger;
+    private final Refunding refunding;
+    private final Refunds refunds;
 
     PaymentService(
             Payments payments,
@@ -80,7 +93,13 @@ class PaymentService {
             PaymentProperties properties,
             JdbcClient jdbc,
             PlatformTransactionManager transactions,
-            MeterRegistry metrics) {
+            MeterRegistry metrics,
+            Ledger ledger,
+            Refunding refunding,
+            Refunds refunds) {
+        this.refunds = refunds;
+        this.ledger = ledger;
+        this.refunding = refunding;
         this.payments = payments;
         this.provider = provider;
         this.workOrders = workOrders;
@@ -202,7 +221,12 @@ class PaymentService {
     Optional<PaymentView> latest(UUID workOrderId) {
         return transaction.execute(status -> {
             workOrders.snapshot(workOrderId).orElseThrow(() -> new NotFoundException("Work order", workOrderId));
-            return payments.latest(workOrderId).map(PaymentView::of);
+            return payments.latest(workOrderId)
+                    .map(p -> PaymentView.of(
+                            p,
+                            refunds.forPayment(p.id())
+                                    .map(Refunds.Refund::state)
+                                    .orElse(null)));
         });
     }
 
@@ -296,7 +320,7 @@ class PaymentService {
                     payment,
                     State.CAPTURED,
                     null,
-                    new Settlement(t.valId(), t.bankTranId(), t.providerStatus(), t.riskLevel()));
+                    new Settlement(t.valId(), t.bankTranId(), t.providerStatus(), t.riskLevel(), t.storeAmount()));
             return;
         }
         if (!payment.state().isOpen()) {
@@ -315,26 +339,51 @@ class PaymentService {
                     payment,
                     State.FAILED,
                     "The payment didn't go through (" + last.providerStatus() + ").",
-                    new Settlement(last.valId(), last.bankTranId(), last.providerStatus(), last.riskLevel()));
+                    new Settlement(last.valId(), last.bankTranId(), last.providerStatus(), last.riskLevel(), null));
         }
     }
 
+    /**
+     * Settles a payment. A capture is recorded in the ledger in the same transaction (the money and the record of
+     * it commit together), and so is the work order's funding. A capture for a job that was cancelled while the
+     * client was paying is kept, since the money is real, and refunded at once.
+     */
     private void settleAs(Payment payment, State to, @Nullable String reason, @Nullable Settlement settlement) {
+        var refund = new java.util.concurrent.atomic.AtomicReference<UUID>();
         var settled = transaction.execute(status -> {
             if (!payments.settle(payment.id(), to, reason, settlement)) {
                 return false; // settled by a concurrent confirmation: theirs stands
             }
-            if (to == State.CAPTURED && !workOrders.markFunded(payment.workOrderId(), Timestamps.now())) {
-                payments.mismatch(
-                        payment,
-                        settlement == null ? "VALID" : settlement.providerStatus(),
-                        "Paid for a job that can't be funded any more (cancelled while paying): refund it.");
+            if (to == State.CAPTURED) {
+                ledger.post(
+                        Postings.capture(payment.tenantId(), payment.id(), payment.workOrderId(), payment.amount()));
+                if (settlement != null && settlement.storeAmount() != null) {
+                    Postings.gatewayFee(
+                                    payment.tenantId(),
+                                    payment.id(),
+                                    payment.workOrderId(),
+                                    payment.amount(),
+                                    settlement.storeAmount())
+                            .ifPresent(ledger::post);
+                }
+                if (!workOrders.markFunded(payment.workOrderId(), Timestamps.now())) {
+                    payments.mismatch(
+                            payment,
+                            settlement == null ? "VALID" : settlement.providerStatus(),
+                            "Paid for a job that can't be funded any more (cancelled while paying): refunding it.");
+                    refunding
+                            .request(payment, "The job was cancelled while the client was paying.")
+                            .ifPresent(refund::set);
+                }
             }
             return true;
         });
         if (Boolean.TRUE.equals(settled)) {
             log.info("Payment {} for work order {}: {}", payment.id(), payment.workOrderId(), to);
             count(to.name().toLowerCase());
+        }
+        if (refund.get() != null) {
+            refunding.send(refund.get()); // best effort now; the reconciler retries
         }
     }
 

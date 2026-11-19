@@ -159,5 +159,166 @@ Aggregates point at each other with ID columns, never with Java object reference
 | A tenant sees and writes only its own work orders, checklists and offers | row-level security policies `tenant_isolation` (V4, [ADR 0003](../adr/0003-shared-schema-and-row-level-security-for-tenancy.md)) |
 | A technician reads only their own offers and the work orders offered or assigned to them | row-level security policies `technician_reads_own_offers`, `technician_reads_offered_work` (V7, [ADR 0005](../adr/0005-conditional-update-for-job-acceptance.md)) |
 | An offer's tenant is its work order's tenant | composite foreign key `offer_work_order_same_tenant` (V7) |
+| A work order has at most one open or captured payment | partial unique index `payment_one_live_per_work_order` (V19) |
+| Every journal entry balances (debits = credits, at least two lines) | deferred constraint triggers `journal_entry_balanced`, `journal_line_balanced`, checked at commit (V20, [ADR 0017](../adr/0017-double-entry-ledger-in-postgresql.md)) |
+| The ledger is append-only | `UPDATE`, `DELETE` and `TRUNCATE` revoked from the app role, plus triggers that refuse them for everyone (V20) |
 
 `company` and `technician` are not tenant-owned: companies are the tenant list, and technicians work for many companies.
+
+## Events, AI and matching (Phases 2 and 3)
+
+Kept apart from the diagram above so each stays readable. Row-level security applies to every table with a `tenant_id`.
+
+```mermaid
+erDiagram
+  company ||--o{ ai_call : "owns (tenant_id)"
+  work_order ||--o{ completion_audit : "is checked by"
+  technician ||--o| technician_embedding : "is described by"
+  work_order ||--o| work_order_embedding : "is described by"
+
+  event_publication {
+    uuid id PK
+    text listener_id "which listener still has to run"
+    text event_type
+    text serialized_event
+    timestamptz publication_date
+    timestamptz completion_date "null until the listener succeeded"
+    text status
+    int completion_attempts
+  }
+  ai_call {
+    bigint id PK
+    uuid tenant_id FK
+    text feature "skill-suggestions, intake, completion-audit"
+    text prompt_version
+    text model
+    text outcome "OK, ERROR, INVALID_OUTPUT, REPLAYED, RATE_LIMITED, CIRCUIT_OPEN, BUDGET_EXCEEDED"
+    text input_redacted "no emails, phones or street addresses"
+    text output
+    int input_tokens
+    int output_tokens
+    numeric cost_usd "at the list price when made"
+    int latency_ms
+    timestamptz created_at
+  }
+  completion_audit {
+    uuid id PK
+    uuid tenant_id FK
+    uuid work_order_id FK
+    uuid source_event_id UK "the SUBMITTED event: audited once"
+    text state "NEEDS_REVIEW, AUTO_APPROVED, APPROVED, REJECTED, DECIDED_ELSEWHERE"
+    text model
+    text prompt_version
+    jsonb items "per checklist item: verdict and evidence"
+    numeric confidence
+    text recommendation "APPROVE or REVIEW"
+    text decided_by "reviewer id, system, or work order"
+    timestamptz decided_at
+  }
+  technician_embedding {
+    uuid technician_id PK
+    vector embedding "768 dimensions, HNSW index"
+    text model
+    text source_hash "re-embed only when the text changed"
+  }
+  work_order_embedding {
+    uuid work_order_id PK
+    uuid tenant_id FK
+    vector embedding
+    text model
+    text source_hash
+  }
+```
+
+## Money (Phase 4)
+
+Payments, refunds and payouts record what happened at the provider and the bank; the ledger records where the money is. Journal tables are append-only (V20).
+
+```mermaid
+erDiagram
+  work_order ||--o{ payment : "is funded by (one live)"
+  payment ||--o| refund : "is returned by"
+  work_order ||--o| payout : "pays the technician"
+  technician ||--o{ payout : "receives"
+  payment ||--o{ payment_mismatch : "disagrees with the provider"
+  company ||--o{ idempotency_key : "owns (tenant_id)"
+  journal_entry ||--|{ journal_line : "has (debits = credits)"
+  ledger_account ||--o{ journal_line : "is posted to"
+  journal_entry |o--o| journal_entry : "reverses"
+
+  payment {
+    uuid id PK
+    uuid tenant_id FK
+    uuid work_order_id FK "partial UK: one INITIATED, PENDING or CAPTURED"
+    text tran_id UK "our id at the provider, 30 chars max"
+    text status "INITIATED, PENDING, CAPTURED, FAILED, EXPIRED"
+    bigint amount_minor
+    text currency
+    text gateway_url "the payment page"
+    text val_id UK "the provider's validation id"
+    text bank_tran_id "refunds name it"
+    bigint store_amount_minor "what the gateway pays us"
+    smallint risk_level
+    text reason
+    timestamptz settled_at
+  }
+  refund {
+    uuid id PK
+    uuid tenant_id FK
+    uuid payment_id FK, UK
+    bigint amount_minor
+    text refund_trans_id UK "our id for the refund"
+    text refund_ref_id "the provider's"
+    text status "REQUESTED, PROCESSING, REFUNDED, FAILED"
+    text reason
+  }
+  payout {
+    uuid id PK
+    uuid tenant_id FK
+    uuid work_order_id FK, UK
+    uuid technician_id FK
+    bigint amount_minor "budget minus the platform fee"
+    text status "PENDING, PAID"
+    text bank_reference
+    timestamptz paid_at
+  }
+  payment_mismatch {
+    bigint id PK
+    uuid tenant_id FK
+    uuid payment_id FK
+    text local_status
+    text provider_status
+    text detail "for a person: refund it, check it"
+  }
+  idempotency_key {
+    uuid tenant_id PK
+    text idem_key PK
+    text scope
+    text request_hash
+    text status "IN_PROGRESS, COMPLETED"
+    int response_status
+    jsonb response_body
+  }
+  ledger_account {
+    text code PK "bank, gateway_clearing, client_escrow, technician_payable, platform_revenue, gateway_fees"
+    text kind "ASSET, LIABILITY, REVENUE, EXPENSE"
+  }
+  journal_entry {
+    uuid id PK
+    uuid tenant_id FK
+    text reference "UK per company: capture:<payment>, approval:<work order>"
+    text kind "CAPTURE, GATEWAY_FEE, APPROVAL, PAYOUT, REFUND, REVERSAL"
+    uuid work_order_id
+    text currency
+    uuid reverses_entry_id FK "UK: reversed at most once"
+  }
+  journal_line {
+    bigint id PK
+    uuid entry_id FK
+    uuid tenant_id FK
+    text account_code FK
+    uuid technician_id FK "for technician_payable"
+    bigint debit_minor "exactly one side positive"
+    bigint credit_minor
+  }
+```

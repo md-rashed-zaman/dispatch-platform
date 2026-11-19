@@ -13,6 +13,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  *     timed out), so a new attempt may replace it: the customer never saw its page, so nobody can pay it
  * @param reconcileAfter how long a payment may stay open before the reconciler asks the provider about it
  * @param sessionLifetime after this, an open payment with nothing paid at the provider is EXPIRED
+ * @param platformFeeBasisPoints the platform's share of each approved job, in hundredths of a percent (1000 = 10%)
  */
 @ConfigurationProperties("dispatch.payments")
 record PaymentProperties(
@@ -21,6 +22,7 @@ record PaymentProperties(
         Duration staleAfter,
         Duration reconcileAfter,
         Duration sessionLifetime,
+        int platformFeeBasisPoints,
         SslCommerz sslcommerz) {
 
     /**

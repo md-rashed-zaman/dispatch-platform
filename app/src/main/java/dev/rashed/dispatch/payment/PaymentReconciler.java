@@ -24,10 +24,10 @@ import org.springframework.transaction.support.TransactionTemplate;
  * <ul>
  *   <li>Every minute: payments open longer than {@code reconcile-after} (the notice got lost, the customer closed
  *       the tab) are settled from the provider's answer to a status query: captured, still pending, or failed or
- *       expired once the payment page's lifetime is over.
+ *       expired once the payment page's lifetime is over. Open refunds are sent again or checked.
  *   <li>Every night: every payment that changed in the last day is compared with the provider; disagreements go to
  *       {@code payment_mismatch} for a person (a capture the provider doesn't know, a payment that arrived after we
- *       gave up). Old idempotency keys are deleted.
+ *       gave up). The platform's ledger totals must balance. Old idempotency keys are deleted.
  * </ul>
  */
 @Component
@@ -41,6 +41,9 @@ class PaymentReconciler {
     private final PaymentService service;
     private final PaymentProvider provider;
     private final PaymentProperties properties;
+    private final Refunds refunds;
+    private final Refunding refunding;
+    private final dev.rashed.dispatch.ledger.Ledger ledger;
     private final JdbcClient jdbc;
     private final TransactionTemplate transaction;
     private final MeterRegistry metrics;
@@ -53,7 +56,13 @@ class PaymentReconciler {
             PaymentProperties properties,
             JdbcClient jdbc,
             PlatformTransactionManager transactions,
-            MeterRegistry metrics) {
+            MeterRegistry metrics,
+            Refunds refunds,
+            Refunding refunding,
+            dev.rashed.dispatch.ledger.Ledger ledger) {
+        this.refunds = refunds;
+        this.refunding = refunding;
+        this.ledger = ledger;
         this.tenants = tenants;
         this.payments = payments;
         this.service = service;
@@ -76,15 +85,21 @@ class PaymentReconciler {
         var before = Timestamps.now().minus(properties.reconcileAfter());
         for (var tenant : tenants.allTenantIds()) {
             TenantContext.runAs(tenant, () -> {
-                for (var payment : transaction.execute(status -> payments.openSince(before, BATCH))) {
-                    try {
+                try {
+                    for (var payment : transaction.execute(status -> payments.openSince(before, BATCH))) {
                         service.apply(payment, provider.query(payment.tranId()));
                         checked.incrementAndGet();
-                    } catch (PaymentProvider.Unavailable | PaymentProvider.Refused cantAsk) {
-                        // Still unknown: it stays open, and the next round asks again.
-                        log.warn("Payment {} not reconciled yet: {}", payment.id(), cantAsk.getMessage());
-                        return; // the provider is down for this tenant's whole batch too
                     }
+                    // Refunds move on their own clock: a minute between asks is plenty.
+                    var asked = Timestamps.now().minus(Duration.ofMinutes(1));
+                    for (var refund : transaction.execute(status -> refunds.open(asked, BATCH))) {
+                        refunding.check(refund);
+                        checked.incrementAndGet();
+                    }
+                } catch (PaymentProvider.Unavailable | PaymentProvider.Refused cantAsk) {
+                    // Still unknown: it stays open, and the next round asks again. The provider is likely down
+                    // for the rest of this company's batch too.
+                    log.warn("Payments not reconciled yet: {}", cantAsk.getMessage());
                 }
             });
         }
@@ -148,6 +163,17 @@ class PaymentReconciler {
             });
         }
         metrics.counter("dispatch.payments.mismatches").increment(found.get());
+        long debits = 0;
+        long credits = 0;
+        for (var total : ledger.platformTotals().values()) {
+            debits += total[0];
+            credits += total[1];
+        }
+        if (debits != credits) {
+            // Can't happen while the database checks every entry at commit; if it does, stop and look.
+            log.error("The ledger doesn't balance: debits {} and credits {} across the platform", debits, credits);
+            metrics.counter("dispatch.ledger.imbalance").increment();
+        }
         log.info("Daily payment reconciliation: {} compared, {} new mismatches", compared.get(), found.get());
     }
 }

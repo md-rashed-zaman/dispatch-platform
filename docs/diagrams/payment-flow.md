@@ -123,9 +123,9 @@ sequenceDiagram
   D->>WO: approve (SUBMITTED to APPROVED)
   WO-)P: WorkApproved (after commit)
   P->>L: post: debit client_escrow 5,000<br/>credit technician_payable 4,500, credit platform_revenue 500
-  P->>P: payout PENDING (weekly batch)
-  P->>B: batch transfer (technician_payable balances)
-  B-->>P: transfer confirmed (reference)
+  P->>P: payout PENDING (one per approved job)
+  P->>B: the platform pays the technician (bank or bKash)
+  B-->>P: a platform admin confirms it with the bank's reference
   P->>L: post: debit technician_payable 4,500, credit bank 4,500
   P-)WO: PayoutReleased
   WO->>WO: mark as paid (APPROVED to PAID)
@@ -194,12 +194,13 @@ stateDiagram-v2
 
 Refunds are their own records (`REQUESTED -> PROCESSING -> REFUNDED / FAILED`), because a captured payment stays captured: the refund is a second movement of money, and the ledger shows both (step 4.3).
 
-## Ledger postings (preview of step 4.3)
+## Ledger postings
 
 | Event | Debit | Credit | Example (budget ৳5,000) |
 |---|---|---|---|
 | Escrow funded (captured) | `gateway_clearing` | `client_escrow` | 5,000 |
-| Settlement from SSLCommerz | `bank` 4,875 and `gateway_fees` 125 | `gateway_clearing` 5,000 | charge about 2.5% |
+| Gateway's charge (at capture, from `store_amount`) | `gateway_fees` | `gateway_clearing` | 125 (about 2.5%) |
+| Settlement from SSLCommerz to our bank (not posted yet: needs the settlement report) | `bank` | `gateway_clearing` | 4,875 |
 | Work approved | `client_escrow` 5,000 | `technician_payable` 4,500 and `platform_revenue` 500 | fee 10% |
 | Payout sent | `technician_payable` | `bank` | 4,500 |
 | Refund (cancelled before start) | `client_escrow` | `gateway_clearing` | 5,000 |
@@ -213,6 +214,13 @@ Every entry's debits equal its credits; corrections are reversing entries, never
 - `FakeSslCommerz`: a stand-in at `/fake-sslcommerz` with the same endpoints and fields, for local runs and demos without a sandbox store. Its page has Pay, "Pay but lose the notification", Card declined and Cancel.
 - The work order page has a Payment panel; `scripts/demo.sh` pays before Rahim starts.
 - Refunds on cancel and the payout on approval come with the ledger (step 4.3): their postings are the point.
+
+## Built in step 4.3
+
+- `ledger` module ([ADR 0017](../adr/0017-double-entry-ledger-in-postgresql.md)): the six accounts above, entries checked balanced by the code and again by the database at commit, append-only, idempotent by reference, reversal by a mirror entry.
+- Postings (`Postings`): capture and the gateway's charge in the capture's transaction; on APPROVED the escrow is released (10% fee, the rest to the technician) and a payout created; on payout confirmation the money leaves `technician_payable` and the work order becomes PAID.
+- Refunds: cancelling a funded job, or a payment captured after cancellation, refunds the full amount through SSLCommerz's refund API; the reconciler checks it every minute and posts it when the provider says it's done.
+- Payouts: `GET /api/payouts` and `POST /api/payouts/{id}/confirm` with the bank's reference (platform admins); a work order's entries at `GET /api/work-orders/{id}/ledger`; platform totals at `GET /api/ledger/totals`.
 
 ## Not in this design
 

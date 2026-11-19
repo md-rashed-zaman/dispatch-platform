@@ -85,6 +85,8 @@ export type Payment = {
   reason: string | null;
   createdAt: string;
   settledAt: string | null;
+  /** Once the money is being returned (the job was cancelled): REQUESTED, PROCESSING, REFUNDED or FAILED. */
+  refund: "REQUESTED" | "PROCESSING" | "REFUNDED" | "FAILED" | null;
 };
 
 export type Page<T> = { items: T[]; next: string | null };

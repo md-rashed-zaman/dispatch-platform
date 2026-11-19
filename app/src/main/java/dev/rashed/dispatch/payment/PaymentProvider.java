@@ -24,6 +24,25 @@ interface PaymentProvider {
     /** Every transaction the provider has for our transaction id: one per attempt in the session. */
     List<Transaction> query(String tranId);
 
+    /**
+     * Starts returning a captured payment's money. Asynchronous at the provider: follow it with
+     * {@link #refundStatus}.
+     *
+     * @param refundTransId our id for this refund, the same on a retry
+     */
+    RefundStarted refund(String bankTranId, String refundTransId, Money amount, String remarks);
+
+    RefundState refundStatus(String refundRefId);
+
+    record RefundStarted(String refundRefId) {}
+
+    enum RefundState {
+        PROCESSING,
+        REFUNDED,
+        /** The provider gave up (cancelled): a person has to return the money another way. */
+        FAILED
+    }
+
     record Checkout(
             String tranId,
             Money amount,
@@ -39,13 +58,15 @@ interface PaymentProvider {
 
     /**
      * What the provider says about one transaction, already checked for shape. {@code amount} is what the customer
-     * was asked to pay, in the currency we sent.
+     * was asked to pay, in the currency we sent; {@code storeAmount}, if known, is what the provider pays us after
+     * its charge.
      */
     record Transaction(
             String tranId,
             @Nullable String valId,
             Status status,
             Money amount,
+            @Nullable Money storeAmount,
             @Nullable String bankTranId,
             int riskLevel,
             String providerStatus) {}
